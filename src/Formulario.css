@@ -1,0 +1,53 @@
+/* La app-wrapper ya está en App.css, se reutiliza */
+
+/* Tarjeta de registro */
+.register-card {
+  background-color: #ffffff;
+  padding: 32px 40px;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  width: 420px;
+  text-align: center;
+}
+
+/* Título */
+.register-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 24px;
+  color: #333333;
+}
+
+/* Botón verde de registrarse */
+.register-button {
+  width: 100%;
+  padding: 10px 12px;
+  margin-top: 12px;
+  border-radius: 8px;
+  border: none;
+  background-color: #22c55e;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.register-button:hover {
+  background-color: #16a34a;
+}
+
+/* Link de volver */
+.back-link {
+  margin-top: 10px;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 14px;
+  color: #2563eb;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.back-link:hover {
+  color: #1d4ed8;
+}

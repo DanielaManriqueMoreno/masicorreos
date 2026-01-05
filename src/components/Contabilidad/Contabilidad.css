@@ -1,0 +1,61 @@
+/* Contabilidad.css */
+.contabilidad-container {
+  width: 100%;
+  padding: 25px;
+  background: #ecf0f1;
+}
+
+.btn-volver {
+  background: #94a3b8;
+  color: #223448;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.btn-volver:hover {
+  background: #7f8c8d;
+  color: white;
+}
+
+.main-title {
+  font-size: 24px;
+  font-weight: bold;
+  color: #2c3e50;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.main-subtitle {
+  font-size: 14px;
+  color: #7f8c8d;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.cards-wrapper {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px 0;
+}
+
+.card-mensaje {
+  grid-column: 1 / -1;
+  padding: 40px;
+  background: #f8f9fa;
+  border-radius: 15px;
+  color: #6c757d;
+  text-align: center;
+}
+
+.card-mensaje p {
+  font-size: 18px;
+  margin: 0;
+}
+

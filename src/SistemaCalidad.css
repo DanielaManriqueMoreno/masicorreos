@@ -1,0 +1,76 @@
+/* SistemaCalidad.css */
+.sistema-calidad {
+  padding: 20px;
+}
+
+.main-title {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #2c3e50;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.main-subtitle {
+  font-size: 1.1rem;
+  color: #7f8c8d;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.cards-wrapper {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.card {
+  background: white;
+  border-radius: 12px;
+  padding: 25px 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+  text-align: center;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+}
+
+.card-green {
+  border-color: #27ae60;
+}
+
+.card-green:hover {
+  background-color: #f0f9f4;
+}
+
+.card-wine {
+  border-color: #8e44ad;
+}
+
+.card-wine:hover {
+  background-color: #f8f5fb;
+}
+
+.card-icon {
+  font-size: 2.5rem;
+  margin-bottom: 15px;
+}
+
+.card h3 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 10px;
+}
+
+.card p {
+  color: #7f8c8d;
+  line-height: 1.5;
+  font-size: 0.95rem;
+}
