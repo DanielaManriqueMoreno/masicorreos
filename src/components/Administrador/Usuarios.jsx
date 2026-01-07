@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { obtenerUsuarios } from "../../api";
 import CrearUsuarioModal from "./CrearUsuarioModal";
-import "./usuarios.css";
+import "./Usuarios.css";
 
 export default function Usuarios() {
   const [usuarios, setUsuarios] = useState([]);
@@ -45,6 +45,7 @@ export default function Usuarios() {
       <table className="usuarios-table">
         <thead>
           <tr>
+            <th>Documento</th>
             <th>Nombre</th>
             <th>Correo</th>
             <th>Rol</th>
@@ -55,7 +56,8 @@ export default function Usuarios() {
         <tbody>
           {usuarios.length > 0 ? (
             usuarios.map(u => (
-              <tr key={u.id}>
+              <tr key={u.documento}>
+                <td>{u.documento}</td>
                 <td>{u.nombre}</td>
                 <td>{u.correo}</td>
                 <td>{u.rol}</td>

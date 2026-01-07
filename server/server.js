@@ -34,30 +34,74 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Configurar multer para archivos
-const upload = multer({ storage: multer.memoryStorage() });
-
-// Ruta de prueba
-app.get('/api/health', async (req, res) => {
+// LOGIN
+app.post('/api/login', async (req, res) => {
   try {
-    // Probar conexión a la base de datos
-    const [rows] = await pool.execute('SELECT 1 as test');
-    res.json({ 
-      status: 'OK', 
-      message: 'Servidor funcionando correctamente',
-      database: 'Conectado',
-      timestamp: new Date().toISOString()
+    const { correo, password } = req.body;
+
+    if (!correo || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Correo y contraseña son obligatorios'
+      });
+    }
+
+    // Buscar usuario por correo
+    const [rows] = await pool.execute(
+      'SELECT documento, nombre, correo, password, rol, estado FROM usuarios WHERE correo = ?',
+      [correo]
+    );
+
+    if (rows.length === 0) {
+      return res.status(401).json({
+        success: false,
+        message: 'Credenciales incorrectas'
+      });
+    }
+
+    const usuario = rows[0];
+
+    if (usuario.estado !== 'ACTIVO') {
+      return res.status(403).json({
+        success: false,
+        message: 'Usuario inactivo'
+      });
+    }
+
+    // Validar contraseña
+    const passwordOk = await bcrypt.compare(password, usuario.password);
+
+    if (!passwordOk) {
+      return res.status(401).json({
+        success: false,
+        message: 'Credenciales incorrectas'
+      });
+    }
+
+    // Login exitoso
+    res.json({
+      success: true,
+      user: {
+        documento: usuario.documento,
+        nombre: usuario.nombre,
+        correo: usuario.correo,
+        rol: usuario.rol
+      }
     });
+  console.log("Usuario encontrado:", usuario);
+
   } catch (error) {
-    res.status(503).json({ 
-      status: 'ERROR', 
-      message: 'Servidor funcionando pero sin conexión a la base de datos',
-      database: 'Desconectado',
-      error: error.message,
-      timestamp: new Date().toISOString()
+    console.error('ERROR LOGIN:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor'
     });
   }
 });
+
+
+// Configurar multer para archivos
+const upload = multer({ storage: multer.memoryStorage() });
 
 // Listar usuarios (ADMIN)
 app.get('/api/admin/usuarios', async (req, res) => {
@@ -70,7 +114,7 @@ app.get('/api/admin/usuarios', async (req, res) => {
         rol,
         estado
       FROM usuarios
-      ORDER BY id DESC
+      ORDER BY documento DESC
     `);
 
     res.json({
@@ -86,6 +130,80 @@ app.get('/api/admin/usuarios', async (req, res) => {
     });
   }
 });
+
+// Crear usuario (ADMIN)
+app.post('/api/admin/crear-usuario', async (req, res) => {
+  try {
+  console.log('Recibido: ', req.body);
+    const {
+      documento,
+      nombre,
+      correo,
+      password,
+      rol,
+      estado,
+      areas,
+      usuarioCreadorDocumento
+    } = req.body;
+
+    // Validaciones básicas todos los campos deben estare llenos
+    if (!documento || !nombre || !correo || !password || !rol) {
+      return res.status(400).json({
+        success: false,
+        message: 'Faltan campos obligatorios'
+      });
+    }
+
+    // Verificar si ya existe usuario
+    const [existe] = await pool.execute(
+      'SELECT documento FROM usuarios WHERE correo = ? OR documento = ?',
+      [correo, documento]
+    );
+
+    if (existe.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'El usuario ya existe'
+      });
+    }
+
+    // Encriptar contraseña
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    // Insertar usuario
+    const [result] = await pool.execute(
+      `INSERT INTO usuarios 
+        (documento, nombre, correo, password, rol, estado, creado_por)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [documento, nombre, correo, passwordHash, rol, estado, usuarioCreadorDocumento]
+    );
+
+    // Guardar áreas (si no es administrador)
+    if (Array.isArray(areas) && areas.length > 0) {
+      for (const area of areas) {
+        await pool.execute(
+          'INSERT INTO area_usuario (id_usuario, id_area) VALUES (?, ?)',
+          [documento, area]
+        );
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'Usuario creado correctamente'
+    });
+
+  } catch (error) {
+    console.error('ERROR CREAR USUARIO:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor'
+    });
+  }
+});
+
+
+
 
 // ==================== ENDPOINTS DE RECUPERACIÓN DE CONTRASEÑA ====================
 
@@ -104,7 +222,7 @@ app.post('/api/forgot-password', async (req, res) => {
 
     // Buscar usuario por nombre de usuario
     const [users] = await pool.execute(
-      'SELECT id, nombre, usuario FROM usuarios WHERE usuario = ? AND is_active = TRUE',
+      'SELECT documento, nombre, usuario FROM usuarios WHERE usuario = ? AND is_active = TRUE',
       [usuario.trim()]
     );
 
@@ -194,7 +312,7 @@ app.post('/api/reset-password', async (req, res) => {
 
     // Buscar usuario con código válido
     const [users] = await pool.execute(
-      'SELECT id, usuario FROM usuarios WHERE reset_token = ? AND reset_token_expires > NOW()',
+      'SELECT documento, usuario FROM usuarios WHERE reset_token = ? AND reset_token_expires > NOW()',
       [token]
     );
 

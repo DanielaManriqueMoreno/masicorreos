@@ -1,52 +1,82 @@
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+.usuarios-container {
+  background: #ffffff;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  min-height: 100%;
+}
+
+.usuarios-header {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
-  z-index: 1000;
+  margin-bottom: 20px;
 }
 
-.modal {
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 500px;
+.usuarios-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #2c3e50;
 }
 
-.modal h3 {
-  margin-top: 0;
+.usuarios-header button {
+  background: #3498db;
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
 }
 
-.modal input, .modal select {
+.usuarios-header button:hover {
+  background: #2980b9;
+}
+
+/* Tabla */
+
+.usuarios-table {
   width: 100%;
-  padding: 8px;
-  margin-bottom: 10px;
+  border-collapse: collapse;
+  font-size: 13px;
+  color: #2c3e50;
 }
 
-.form-group {
-  margin-bottom: 15px;
+.usuarios-table th,
+.usuarios-table td {
+  padding: 10px;
+  border-bottom: 1px solid #ecf0f1;
+  text-align: left;
 }
 
-.checkbox-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.usuarios-table th {
+  background: #f8f9fa;
+  font-weight: 600;
+  color: #34495e;
 }
 
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 20px;
+.usuarios-table tr:hover {
+  background: #f5f7f8;
 }
+
+.usuarios-table button {
+  background: #97bdf5;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 5px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.usuarios-table button:hover {
+  background: #7f8c8d;
+}
+
+/* Estados */
 
 .error {
-  color: red;
-  margin-bottom: 15px;
+  color: #e74c3c;
+  font-size: 13px;
 }

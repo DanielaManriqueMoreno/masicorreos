@@ -18,57 +18,25 @@ const api = axios.create({
 
 //Funcion para obtener usuarios
 export const obtenerUsuarios = async () => {
-  const response = await api.get('/admin/usuarios');
-  return response.data;
+  const res = await api.get('/admin/usuarios');
+  return res.data;
 };
 
 // Función para registrar usuario
-export const crearUsuarioAdmin = async ({ data, usuarioLogueado }) => {
-  try {
-    const response = await api.post('/admin/crear-usuario', { ...data, usuarioLogueado });
-    return response.data;
-  } catch (error) {
-    if (error.response) {
-      throw new Error(error.response.data.message || 'Error creando usuario');
-    } else if (error.request) {
-      throw new Error('No se pudo conectar al servidor');
-    } else {
-      throw new Error(error.message);
-    }
-  }
+export const crearUsuarioAdmin = async ( data) => {
+    const res = await api.post('/admin/crear-usuario',  data );
+    return res.data;
 };
 
 // Función para iniciar sesión
 export const iniciarSesion = async (correo, password) => {
-  try {
-    const response = await api.post('/login', {
-      correo,
-      password
-    });
-    return response.data;
-  } catch (error) {
-    // Manejo mejorado de errores
-    if (error.response) {
-      // El servidor respondió con un error
-      const errorData = error.response.data;
-      throw new Error(errorData.message || 'Error al iniciar sesión');
-    } else if (error.request) {
-      // La petición se hizo pero no hubo respuesta
-      throw new Error(
-        'No se pudo conectar al servidor backend.\n\n' +
-        'Para solucionarlo:\n' +
-        '1. Abre una nueva terminal\n' +
-        '2. Navega a la carpeta server: cd server\n' +
-        '3. Ejecuta: npm start\n' +
-        '4. Verifica que veas: "🚀 Servidor corriendo en http://localhost:3001"\n\n' +
-        'O ejecuta el archivo: server\\iniciar.bat'
-      );
-    } else {
-      // Error al configurar la petición
-      throw new Error('Error al realizar la petición: ' + error.message);
-    }
-  }
+  const response = await api.post('/login', {
+    correo,
+    password
+  });
+  return response.data;
 };
+
 
 // Función para verificar si el servidor está disponible
 const checkServerHealth = async () => {

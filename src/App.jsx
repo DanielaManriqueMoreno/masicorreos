@@ -35,40 +35,49 @@ function App() {
   }, []);
 
   const handleLogin = async (e) => {
-    e.preventDefault();
-    setError("");
+  e.preventDefault();
+  setError("");
 
-    if (!correo.trim() || !password.trim()) {
-      setError("Por favor completa todos los campos");
-      return;
+  if (!correo.trim() || !password.trim()) {
+    setError("Por favor completa todos los campos");
+    return;
+  }
+
+  setCargando(true);
+
+  try {
+    const resultado = await iniciarSesion(correo.trim(), password); //Recibe lo que esta devoloviendo el backend
+
+    console.log("Resultado de inicio de sesión:", resultado);
+
+    if (resultado.success && resultado.user) { //Se encarga de verificar si el login fue correcto
+      setUsuarioLogueado(resultado.user);
+      setPantalla("interfaz1");
+
+      localStorage.setItem( //Guarda el inicio de sesion en el localstorage
+        "usuarioLogueado",
+        JSON.stringify(resultado.user)
+      );
+      localStorage.setItem("pantallaActual", "interfaz1");
+
+      console.log(
+        "Usuario guardado en localStorage:",
+        localStorage.getItem("usuarioLogueado")
+      );
+
+      setCorreo("");
+      setPassword("");
+      setError("");
+    } else {
+      setError("Error al iniciar sesión");
     }
 
-    setCargando(true);
-
-    try {
-      // Iniciar sesión usando la API
-      const resultado = await iniciarSesion(correo.trim(), password);
-
-      if (resultado.success && resultado.user) {
-        // Login exitoso - Guardar en localStorage
-        setUsuarioLogueado(resultado.user);
-        setPantalla("interfaz1");
-        setError("");
-        setCorreo("");
-        setPassword("");
-        
-        // Guardar sesión en localStorage
-        localStorage.setItem('usuarioLogueado', JSON.stringify(resultado.user));
-        localStorage.setItem('pantallaActual', 'interfaz1');
-      } else {
-        setError("Error al iniciar sesión");
-      }
-    } catch (err) {
-      setError(err.message || "Error al iniciar sesión. Verifica que el servidor esté corriendo.");
-    } finally {
-      setCargando(false);
-    }
-  };
+  } catch (err) {
+    setError(err.message || "Error al iniciar sesión");
+  } finally {
+    setCargando(false);
+  }
+};
 
   const handleLogout = () => {
     setUsuarioLogueado(null);
