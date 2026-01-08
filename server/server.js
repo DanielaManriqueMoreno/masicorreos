@@ -30,6 +30,11 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middlewares
+app.use((req, res, next) => {
+  console.log("➡️", req.method, req.url);
+  next();
+});
+
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
@@ -86,7 +91,6 @@ app.post('/api/login', async (req, res) => {
     });
   }
 });
-
 
 // Configurar multer para archivos
 const upload = multer({ storage: multer.memoryStorage() });
@@ -190,6 +194,80 @@ app.post('/api/admin/crear-usuario', async (req, res) => {
   }
 });
 
+// ACTUALIZAR PERFIL DE USUARIO
+app.put("/api/perfil", async (req, res) => {
+  try {
+    const { documento, nombre, correo, password } = req.body;
+
+    // Validaciones
+    if (!documento || !nombre || !correo) {
+      return res.status(400).json({
+        success: false,
+        message: 'Faltan campos obligatorios'
+      });
+    }
+
+    // Verificar que el usuario exista
+    const [usuarios] = await pool.execute(
+      'SELECT documento FROM usuarios WHERE documento = ?',
+      [documento]
+    );
+
+    if (usuarios.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Usuario no encontrado'
+      });
+    }
+
+    // Verificar que el correo no esté en uso por otro usuario
+    const [correoExiste] = await pool.execute(
+      'SELECT documento FROM usuarios WHERE correo = ? AND documento != ?',
+      [correo, documento]
+    );
+
+    if (correoExiste.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'El correo ya está en uso'
+      });
+    }
+
+    // Construir query dinámico
+    let query = 'UPDATE usuarios SET nombre = ?, correo = ?';
+    let params = [nombre, correo];
+
+    if (password && password.trim() !== '') {
+      const passwordHash = await bcrypt.hash(password, 10);
+      query += ', password = ?';
+      params.push(passwordHash);
+    }
+
+    query += ' WHERE documento = ?';
+    params.push(documento);
+
+    await pool.execute(query, params);
+
+    // Devolver usuario actualizado (sin password)
+    const [usuarioActualizado] = await pool.execute(
+      'SELECT documento, nombre, correo, rol FROM usuarios WHERE documento = ?',
+      [documento]
+    );
+
+    res.json({
+      success: true,
+      message: 'Perfil actualizado correctamente',
+      user: usuarioActualizado[0]
+    });
+
+  } catch (error) {
+    console.error('ERROR ACTUALIZAR PERFIL:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor'
+    });
+  }
+});
 
 
 

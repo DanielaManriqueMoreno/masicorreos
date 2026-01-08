@@ -15,7 +15,7 @@ import CrearPlantilla from "./components/Plantillas/CrearPlantilla";
 import SistemaPlantillas from "./components/Plantillas/SistemaPlantillas";
 import VerRegistros from "./components/Registros/VerRegistros";
 import Usuarios from "./components/Administrador/Usuarios";
-import PerfilUsuario from "./components/Perfil/PerfilUsuario";
+import Perfil from "./components/Perfil/Perfil";
 import RecuperarPassword from "./components/RecuperarPassword/RecuperarPassword";
 import Sidebar from "./components/Layout/Sidebar";
 
@@ -83,7 +83,7 @@ function Interfaz1({ onSelect, onLogout, usuario }) {
 
       case "perfil":
       default:
-        return <PerfilUsuario usuario={usuario} />;
+        return <Perfil usuario={usuario} />;
     }
   };
 

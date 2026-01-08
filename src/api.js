@@ -37,6 +37,12 @@ export const iniciarSesion = async (correo, password) => {
   return response.data;
 };
 
+// Función para editar informacion personal
+export const actualizarPerfil = async (data) => {
+  const res = await api.put("/perfil", data);
+  return res.data;
+};
+
 
 // Función para verificar si el servidor está disponible
 const checkServerHealth = async () => {
