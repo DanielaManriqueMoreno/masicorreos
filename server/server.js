@@ -39,62 +39,50 @@ app.post('/api/login', async (req, res) => {
   try {
     const { correo, password } = req.body;
 
-    if (!correo || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Correo y contraseña son obligatorios'
-      });
-    }
-
-    // Buscar usuario por correo
+    // 1️⃣ Buscar usuario
     const [rows] = await pool.execute(
-      'SELECT documento, nombre, correo, password, rol, estado FROM usuarios WHERE correo = ?',
+      'SELECT documento, nombre, correo, password, rol FROM usuarios WHERE correo = ?',
       [correo]
     );
 
     if (rows.length === 0) {
-      return res.status(401).json({
-        success: false,
-        message: 'Credenciales incorrectas'
-      });
+      return res.json({ success: false, message: 'Usuario no encontrado' });
     }
 
     const usuario = rows[0];
 
-    if (usuario.estado !== 'ACTIVO') {
-      return res.status(403).json({
-        success: false,
-        message: 'Usuario inactivo'
-      });
+    //  Validar contraseña
+    const ok = await bcrypt.compare(password, usuario.password);
+    if (!ok) {
+      return res.json({ success: false, message: 'Contraseña incorrecta' });
     }
 
-    // Validar contraseña
-    const passwordOk = await bcrypt.compare(password, usuario.password);
+    // Buscar áreas del usuario
+    const [areas] = await pool.execute(
+      'SELECT id_area FROM area_usuario WHERE id_usuario = ?',
+      [usuario.documento]
+    );
 
-    if (!passwordOk) {
-      return res.status(401).json({
-        success: false,
-        message: 'Credenciales incorrectas'
-      });
-    }
+    // Armar usuario completo
+    const usuarioFinal = {
+      documento: usuario.documento,
+      nombre: usuario.nombre,
+      correo: usuario.correo,
+      rol: usuario.rol,
+      areas: areas.map(a => a.id_area)
+    };
 
-    // Login exitoso
+    // Responder
     res.json({
       success: true,
-      user: {
-        documento: usuario.documento,
-        nombre: usuario.nombre,
-        correo: usuario.correo,
-        rol: usuario.rol
-      }
+      user: usuarioFinal
     });
-  console.log("Usuario encontrado:", usuario);
 
   } catch (error) {
     console.error('ERROR LOGIN:', error);
     res.status(500).json({
       success: false,
-      message: 'Error interno del servidor'
+      message: 'Error del servidor'
     });
   }
 });

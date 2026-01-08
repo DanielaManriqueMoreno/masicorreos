@@ -7,8 +7,20 @@ import Interfaz1 from "./Interfaz1";
 import RecuperarPassword from "./components/RecuperarPassword/RecuperarPassword";
 import { iniciarSesion } from "./api";
 
+const AREAS_ID_A_SLUG = {
+  5: "citas",
+  6: "calidad",
+  7: "talento",
+  8: "contabilidad",
+  9: "radicacion",
+  10: "sistemas",
+  11: "plantillas",
+  12: "registros"
+};
+
+
 function App() {
-  const [pantalla, setPantalla] = useState("login"); // "login" | "registro" | "interfaz1"
+  const [pantalla, setPantalla] = useState("login"); // "login" | "interfaz1"
   const [correo, setCorreo] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -49,26 +61,38 @@ function App() {
     const resultado = await iniciarSesion(correo.trim(), password); //Recibe lo que esta devoloviendo el backend
 
     console.log("Resultado de inicio de sesión:", resultado);
+    console.log("Usuario recibido:", resultado.user.areas);
+    if (resultado.success && resultado.user) {
+      const user = resultado.user;
 
-    if (resultado.success && resultado.user) { //Se encarga de verificar si el login fue correcto
-      setUsuarioLogueado(resultado.user);
+      const usuarioNormalizado = {
+      ...user,
+      areas: Array.isArray(user.areas)
+        ? user.areas
+        .map(id => AREAS_ID_A_SLUG[id])
+        .filter(Boolean)
+        : []
+      };
+
+      setUsuarioLogueado(usuarioNormalizado);
       setPantalla("interfaz1");
 
-      localStorage.setItem( //Guarda el inicio de sesion en el localstorage
+      localStorage.setItem(
         "usuarioLogueado",
-        JSON.stringify(resultado.user)
+        JSON.stringify(usuarioNormalizado)
       );
       localStorage.setItem("pantallaActual", "interfaz1");
 
       console.log(
-        "Usuario guardado en localStorage:",
-        localStorage.getItem("usuarioLogueado")
+        "Usuario normalizado:",
+        usuarioNormalizado
       );
 
       setCorreo("");
       setPassword("");
       setError("");
-    } else {
+    }
+    else {
       setError("Error al iniciar sesión");
     }
 

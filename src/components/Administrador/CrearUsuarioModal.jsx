@@ -154,6 +154,11 @@ export default function CrearUsuarioModal({ onClose, onCreado }) {
                     <input type="checkbox" checked={form.areas.includes("10")} onChange={() => toggleArea("10")}/>
                     Sistemas
                   </label>
+
+                  <label>
+                    <input type="checkbox" checked={form.areas.includes("11")} onChange={() => toggleArea("11")}/>
+                    Registros
+                  </label>
                 </div>
               </div>
             </div>

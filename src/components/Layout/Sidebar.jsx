@@ -9,6 +9,7 @@ const AREAS = [
   { id: "radicacion", label: "📝 Radicación" },
   { id: "sistemas", label: "💻 Sistemas" },
   { id: "plantillas", label: "📄 Plantillas" },
+  { id: "registros", label: "📂 Registros" },
   { id: "usuarios", label: "👤 Usuarios", soloAdmin: true },
 ];
 
@@ -55,13 +56,6 @@ export default function Sidebar({
           onClick={() => setVistaActual("perfil")}
         >
           👤 Mi Perfil
-        </button>
-
-        <button
-          className="menu-item"
-          onClick={() => setVistaActual("ver-registros")}
-        >
-          📄 Ver Registros
         </button>
 
         <button className="btn-logout" onClick={onLogout}>
