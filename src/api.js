@@ -16,6 +16,15 @@ const api = axios.create({
   }
 });
 
+//Funcion para verificar sesion
+export const verificarSesion = async (documento) => {
+  const res = await api.get("/auth/me", {
+    params: { documento }
+  });
+  return res.data;
+};
+
+
 //Funcion para obtener usuarios
 export const obtenerUsuarios = async () => {
   const res = await api.get('/admin/usuarios');
@@ -43,6 +52,17 @@ export const actualizarPerfil = async (data) => {
   return res.data;
 };
 
+// Obtener detalles de un usuario (ADMIN)
+export const obtenerUsuarioAdmin = async (documento) => {
+  const res = await api.get(`/admin/usuarios/${documento}`);
+  return res.data;
+};
+
+// Editar usuario (ADMIN)
+export const editarUsuarioAdmin = async (documento, data) => {
+  const res = await api.put(`/admin/usuarios/${documento}`, data);
+  return res.data;
+};
 
 // Función para verificar si el servidor está disponible
 const checkServerHealth = async () => {

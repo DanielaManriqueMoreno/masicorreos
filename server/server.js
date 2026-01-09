@@ -269,6 +269,141 @@ app.put("/api/perfil", async (req, res) => {
   }
 });
 
+//editar usuarios desde ADMIN
+app.put('/api/admin/usuarios/:documento', async (req, res) => {
+  const conn = await pool.getConnection();
+
+  try {
+    const { documento } = req.params;
+    const { nombre, correo, estado, password, areas } = req.body;
+
+    if (!nombre || !correo || !estado) {
+      return res.status(400).json({
+        success: false,
+        message: 'Faltan campos obligatorios'
+      });
+    }
+
+    await conn.beginTransaction();
+
+    let query = `
+      UPDATE usuarios
+      SET nombre = ?, correo = ?, estado = ?
+    `;
+    const params = [nombre, correo, estado];
+
+    if (password) {
+      const hash = await bcrypt.hash(password, 10);
+      query += `, password = ?`;
+      params.push(hash);
+    }
+
+    query += ` WHERE documento = ?`;
+    params.push(documento);
+
+    await conn.execute(query, params);
+
+    // Borrar áreas actuales
+    await conn.execute(
+      'DELETE FROM area_usuario WHERE id_usuario = ?',
+      [documento]
+    );
+
+    // Insertar áreas nuevas
+    if (Array.isArray(areas)) {
+      for (const areaId of areas) {
+        await conn.execute(
+          'INSERT INTO area_usuario (id_usuario, id_area) VALUES (?, ?)',
+          [documento, areaId]
+        );
+      }
+    }
+
+    await conn.commit();
+
+    res.json({
+      success: true,
+      message: 'Usuario actualizado correctamente'
+    });
+
+  } catch (error) {
+    await conn.rollback();
+    console.error('ERROR EDITAR USUARIO:', error);
+
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor'
+    });
+  } finally {
+    conn.release();
+  }
+});
+
+// Obtener detalles de un usuario (ADMIN)
+app.get('/api/admin/usuarios/:documento', async (req, res) => {
+  try {
+    const { documento } = req.params;
+
+    const [userRows] = await pool.execute(
+      'SELECT documento, nombre, correo, rol, estado FROM usuarios WHERE documento = ?',
+      [documento]
+    );
+
+    if (userRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Usuario no encontrado'
+      });
+    }
+
+    const [areasRows] = await pool.execute(
+      'SELECT id_area FROM area_usuario WHERE id_usuario = ?',
+      [documento]
+    );
+
+    res.json({
+      success: true,
+      user: {
+        ...userRows[0],
+        areas: areasRows.map(a => a.id_area)
+      }
+    });
+
+  } catch (error) {
+    console.error('ERROR OBTENER USUARIO:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor'
+    });
+  }
+});
+
+app.get("/api/auth/me", async (req, res) => {
+  const { documento } = req.query;
+
+  const [users] = await pool.execute(
+    `SELECT documento, nombre, correo, rol, estado
+     FROM usuarios WHERE documento = ?`,
+    [documento]
+  );
+
+  if (!users.length || users[0].estado !== "ACTIVO") {
+    return res.status(401).json({ success: false });
+  }
+
+  const [areas] = await pool.execute(
+    `SELECT id_area FROM area_usuario WHERE id_usuario = ?`,
+    [documento]
+  );
+
+  res.json({
+    success: true,
+    user: {
+      ...users[0],
+      areas: areas.map(a => a.id_area)
+    }
+  });
+});
 
 
 // ==================== ENDPOINTS DE RECUPERACIÓN DE CONTRASEÑA ====================

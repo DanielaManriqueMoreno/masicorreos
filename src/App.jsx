@@ -5,7 +5,7 @@ import "./App.css";
 import umitLogo from "./assets/umit-logo.png";
 import Interfaz1 from "./Interfaz1";
 import RecuperarPassword from "./components/RecuperarPassword/RecuperarPassword";
-import { iniciarSesion } from "./api";
+import { iniciarSesion, verificarSesion } from "./api";
 
 const AREAS_ID_A_SLUG = {
   5: "citas",
@@ -30,20 +30,49 @@ function App() {
 
   // Restaurar sesión al cargar la aplicación
   useEffect(() => {
-    const usuarioGuardado = localStorage.getItem('usuarioLogueado');
-    const pantallaGuardada = localStorage.getItem('pantallaActual');
-    
-    if (usuarioGuardado && pantallaGuardada === 'interfaz1') {
-      try {
-        const usuarioData = JSON.parse(usuarioGuardado);
-        setUsuarioLogueado(usuarioData);
-        setPantalla('interfaz1');
-      } catch (error) {
-        console.error('Error al restaurar sesión:', error);
-        localStorage.removeItem('usuarioLogueado');
-        localStorage.removeItem('pantallaActual');
-      }
-    }
+    const usuarioGuardado = localStorage.getItem("usuarioLogueado");
+    const pantallaGuardada = localStorage.getItem("pantallaActual");
+
+    if (!usuarioGuardado || pantallaGuardada !== "interfaz1") return;
+
+    const usuario = JSON.parse(usuarioGuardado);
+
+    verificarSesion(usuario.documento)
+      .then(res => {
+        if (!res.success || !res.user) {
+          console.warn("No se pudo verificar sesion");
+          serUsuarioLogueado(usuario);
+          setPantalla("interfaz1");
+          return;
+        }
+
+        if (res.user.estado === "INACTIVO"){
+          handleLogout();
+          return;
+        }
+
+        //actualizar datos 
+        const usuarioActualizado = {
+          ...res.user,
+          areas: res.user.areas
+            .map(id => AREAS_ID_A_SLUG[id])
+            .filter(Boolean)
+        };
+
+        setUsuarioLogueado(usuarioActualizado);
+        localStorage.setItem(
+          "usuarioLogueado",
+          JSON.stringify(usuarioActualizado)
+        );
+        setPantalla("interfaz1");
+      })
+      .catch(err => {
+        console.warn("Error verificando sesión:", err);
+        // NO cerrar sesión
+        setUsuarioLogueado(usuario);
+        setPantalla("interfaz1");
+      });
+
   }, []);
 
   const handleLogin = async (e) => {
@@ -58,20 +87,21 @@ function App() {
   setCargando(true);
 
   try {
-    const resultado = await iniciarSesion(correo.trim(), password); //Recibe lo que esta devoloviendo el backend
-
+      const resultado = await iniciarSesion(correo.trim(), password);
+	
     console.log("Resultado de inicio de sesión:", resultado);
     console.log("Usuario recibido:", resultado.user.areas);
-    if (resultado.success && resultado.user) {
-      const user = resultado.user;
+
+      if (!resultado.success || !resultado.user) {
+        setError("Credenciales incorrectas");
+        return;
+      }
 
       const usuarioNormalizado = {
-      ...user,
-      areas: Array.isArray(user.areas)
-        ? user.areas
-        .map(id => AREAS_ID_A_SLUG[id])
-        .filter(Boolean)
-        : []
+        ...resultado.user,
+        areas: resultado.user.areas
+          .map(id => AREAS_ID_A_SLUG[id])
+          .filter(Boolean)
       };
 
       setUsuarioLogueado(usuarioNormalizado);
@@ -83,40 +113,27 @@ function App() {
       );
       localStorage.setItem("pantallaActual", "interfaz1");
 
-      console.log(
-        "Usuario normalizado:",
-        usuarioNormalizado
-      );
-
       setCorreo("");
       setPassword("");
-      setError("");
+    } catch (err) {
+      setError(err.message || "Error al iniciar sesión");
+    } finally {
+      setCargando(false);
     }
-    else {
-      setError("Error al iniciar sesión");
-    }
-
-  } catch (err) {
-    setError(err.message || "Error al iniciar sesión");
-  } finally {
-    setCargando(false);
-  }
-};
+  };
 
   const handleLogout = () => {
     setUsuarioLogueado(null);
     setPantalla("login");
     setError("");
-    
-    // Limpiar sesión de localStorage
-    localStorage.removeItem('usuarioLogueado');
-    localStorage.removeItem('pantallaActual');
+
+    localStorage.removeItem("usuarioLogueado");
+    localStorage.removeItem("pantallaActual");
   };
 
-  // Si está en modo recuperar contraseña, mostramos el componente
   if (mostrarRecuperarPassword) {
     return (
-      <RecuperarPassword 
+      <RecuperarPassword
         onCerrar={() => {
           setMostrarRecuperarPassword(false);
           setError("");
@@ -125,13 +142,11 @@ function App() {
     );
   }
 
-  // Si está en modo interfaz1, mostramos la interfaz de ejemplo
   if (pantalla === "interfaz1") {
     return (
-      <Interfaz1 
-        onVolver={handleLogout}
-        onLogout={handleLogout}
+      <Interfaz1
         usuario={usuarioLogueado}
+        onLogout={handleLogout}
       />
     );
   }

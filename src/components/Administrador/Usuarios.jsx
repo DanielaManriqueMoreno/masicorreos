@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
 import { obtenerUsuarios } from "../../api";
 import CrearUsuarioModal from "./CrearUsuarioModal";
+import EditarUsuarioModal from "./EditarUsuarioModal";
 import "./Usuarios.css";
 
 export default function Usuarios() {
   const [usuarios, setUsuarios] = useState([]);
   const [mostrarModal, setMostrarModal] = useState(false);
+  const [editarDocumento, setEditarDocumento] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
 
   const cargarUsuarios = async () => {
     try {
@@ -63,13 +66,15 @@ export default function Usuarios() {
                 <td>{u.rol}</td>
                 <td>{u.estado}</td>
                 <td>
-                  <button>Editar</button>
+                  <button onClick={() => setEditarDocumento(u.documento)}>
+                    Editar
+                  </button>
                 </td>
               </tr>
             ))
           ) : (
             <tr>
-              <td colSpan="5">No hay usuarios registrados</td>
+              <td colSpan="6">No hay usuarios registrados</td>
             </tr>
           )}
         </tbody>
@@ -79,6 +84,14 @@ export default function Usuarios() {
         <CrearUsuarioModal
           onClose={() => setMostrarModal(false)}
           onCreado={cargarUsuarios}
+        />
+      )}
+
+      {editarDocumento && (
+        <EditarUsuarioModal
+          documento={editarDocumento}
+          onClose={() => setEditarDocumento(null)}
+          onActualizado={cargarUsuarios}
         />
       )}
     </div>
