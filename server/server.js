@@ -44,43 +44,53 @@ app.post('/api/login', async (req, res) => {
   try {
     const { correo, password } = req.body;
 
-    // 1️⃣ Buscar usuario
     const [rows] = await pool.execute(
-      'SELECT documento, nombre, correo, password, rol FROM usuarios WHERE correo = ?',
+      'SELECT documento, nombre, correo, password, rol, estado FROM usuarios WHERE correo = ?',
       [correo]
     );
 
     if (rows.length === 0) {
-      return res.json({ success: false, message: 'Usuario no encontrado' });
+      return res.json({
+        success: false,
+        message: 'Usuario no encontrado'
+      });
     }
 
     const usuario = rows[0];
 
-    //  Validar contraseña
-    const ok = await bcrypt.compare(password, usuario.password);
-    if (!ok) {
-      return res.json({ success: false, message: 'Contraseña incorrecta' });
+    // Usuario INACTIVO
+    if (usuario.estado === "INACTIVO") {
+      return res.json({
+        success: false,
+        message: 'Usuario inactivo'
+      });
     }
 
-    // Buscar áreas del usuario
+    // Validar contraseña
+    const ok = await bcrypt.compare(password, usuario.password);
+    if (!ok) {
+      return res.json({
+        success: false,
+        message: 'Contraseña incorrecta'
+      });
+    }
+
+    // Áreas
     const [areas] = await pool.execute(
       'SELECT id_area FROM area_usuario WHERE id_usuario = ?',
       [usuario.documento]
     );
 
-    // Armar usuario completo
-    const usuarioFinal = {
-      documento: usuario.documento,
-      nombre: usuario.nombre,
-      correo: usuario.correo,
-      rol: usuario.rol,
-      areas: areas.map(a => a.id_area)
-    };
-
-    // Responder
+    // Login exitoso
     res.json({
       success: true,
-      user: usuarioFinal
+      user: {
+        documento: usuario.documento,
+        nombre: usuario.nombre,
+        correo: usuario.correo,
+        rol: usuario.rol,
+        areas: areas.map(a => a.id_area)
+      }
     });
 
   } catch (error) {
@@ -91,6 +101,7 @@ app.post('/api/login', async (req, res) => {
     });
   }
 });
+
 
 // Configurar multer para archivos
 const upload = multer({ storage: multer.memoryStorage() });
@@ -378,32 +389,43 @@ app.get('/api/admin/usuarios/:documento', async (req, res) => {
   }
 });
 
-app.get("/api/auth/me", async (req, res) => {
-  const { documento } = req.query;
+app.get('/api/auth/me', async (req, res) => {
+  try {
+    const { documento } = req.query;
 
-  const [users] = await pool.execute(
-    `SELECT documento, nombre, correo, rol, estado
-     FROM usuarios WHERE documento = ?`,
-    [documento]
-  );
+    const [rows] = await pool.execute(
+      `SELECT documento, nombre, correo, rol, estado
+       FROM usuarios
+       WHERE documento = ?`,
+      [documento]
+    );
 
-  if (!users.length || users[0].estado !== "ACTIVO") {
-    return res.status(401).json({ success: false });
-  }
-
-  const [areas] = await pool.execute(
-    `SELECT id_area FROM area_usuario WHERE id_usuario = ?`,
-    [documento]
-  );
-
-  res.json({
-    success: true,
-    user: {
-      ...users[0],
-      areas: areas.map(a => a.id_area)
+    if (rows.length === 0) {
+      return res.status(401).json({ success: false });
     }
-  });
+
+    if (rows[0].estado !== 'ACTIVO') {
+      return res.status(401).json({ success: false });
+    }
+
+    const [areas] = await pool.execute(
+      'SELECT id_area FROM area_usuario WHERE id_usuario = ?',
+      [documento]
+    );
+
+    res.json({
+      success: true,
+      user: {
+        ...rows[0],
+        areas: areas.map(a => a.id_area)
+      }
+    });
+
+  } catch (err) {
+    res.status(500).json({ success: false });
+  }
 });
+
 
 
 // ==================== ENDPOINTS DE RECUPERACIÓN DE CONTRASEÑA ====================

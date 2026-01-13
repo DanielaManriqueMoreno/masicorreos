@@ -41,7 +41,7 @@ function App() {
       .then(res => {
         if (!res.success || !res.user) {
           console.warn("No se pudo verificar sesion");
-          serUsuarioLogueado(usuario);
+          setUsuarioLogueado(usuario);
           setPantalla("interfaz1");
           return;
         }
@@ -76,32 +76,43 @@ function App() {
   }, []);
 
   const handleLogin = async (e) => {
-  e.preventDefault();
-  setError("");
+    e.preventDefault();
+    setError("");
 
-  if (!correo.trim() || !password.trim()) {
-    setError("Por favor completa todos los campos");
-    return;
-  }
+    if (!correo.trim() || !password.trim()) {
+      setError("Por favor completa todos los campos");
+      return;
+    }
 
-  setCargando(true);
+    setCargando(true);
 
-  try {
+    try {
       const resultado = await iniciarSesion(correo.trim(), password);
-	
-    console.log("Resultado de inicio de sesión:", resultado);
-    console.log("Usuario recibido:", resultado.user.areas);
 
-      if (!resultado.success || !resultado.user) {
-        setError("Credenciales incorrectas");
+      // LOGIN FALLIDO
+      if (!resultado.success) {
+        const msg =
+          resultado.message === "Usuario inactivo"
+            ? "Tu usuario está inactivo. Contacta al administrador."
+            : resultado.message || "No se pudo iniciar sesión";
+
+        setError(msg);
+        return;
+      }
+
+      // Seguridad extra
+      if (!resultado.user) {
+        setError("Datos inválidos");
         return;
       }
 
       const usuarioNormalizado = {
         ...resultado.user,
-        areas: resultado.user.areas
-          .map(id => AREAS_ID_A_SLUG[id])
-          .filter(Boolean)
+        areas: Array.isArray(resultado.user.areas)
+          ? resultado.user.areas
+              .map(id => AREAS_ID_A_SLUG[id])
+              .filter(Boolean)
+          : []
       };
 
       setUsuarioLogueado(usuarioNormalizado);
@@ -115,12 +126,14 @@ function App() {
 
       setCorreo("");
       setPassword("");
+
     } catch (err) {
       setError(err.message || "Error al iniciar sesión");
     } finally {
       setCargando(false);
     }
   };
+
 
   const handleLogout = () => {
     setUsuarioLogueado(null);
