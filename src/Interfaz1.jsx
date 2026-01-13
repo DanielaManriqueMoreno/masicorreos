@@ -73,7 +73,7 @@ function Interfaz1({ onSelect, onLogout, usuario }) {
         return <CrearPlantilla usuario={usuario} />;
 
       case "sistema-plantillas":
-        return <SistemaPlantillas usuario={usuario} />;
+        return <SistemaPlantillas usuario={usuario} onNavigate={setVistaActual} />;
 
       case "ver-registros":
         return <VerRegistros usuario={usuario} />;

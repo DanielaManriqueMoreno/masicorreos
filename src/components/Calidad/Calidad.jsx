@@ -11,7 +11,7 @@ function Calidad({ onSelect, onVolver }) {
 
   return (
     <div className="calidad-container">
-      <div style={{ width: "100%", textAlign: "left", marginBottom: "20px" }}>
+      <div className="btn-volver-container-full">
         <button 
           className="btn-volver"
           onClick={onVolver}

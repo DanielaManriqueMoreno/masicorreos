@@ -215,3 +215,9 @@
   line-height: 1.4;
 }
 
+/* Estilos movidos desde JSX */
+.btn-volver-container {
+  text-align: left;
+  margin-bottom: 20px;
+}
+

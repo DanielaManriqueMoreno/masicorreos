@@ -393,7 +393,7 @@ const SistemaCitas = ({ onVolver, usuario }) => {
         type="file"
         accept=".csv,.xlsx"
         onChange={handleFileSelect}
-        style={{ display: 'none' }}
+        className="input-file-citas"
       />
 
       {/* Barra de progreso */}
@@ -402,7 +402,7 @@ const SistemaCitas = ({ onVolver, usuario }) => {
           <div className="progress-bar">
             <div 
               className="progress-fill" 
-              style={{ width: `${progress}%` }}
+              style={{ '--progress-width': `${progress}%` }}
             ></div>
           </div>
           <div className="progress-text">{progress}%</div>

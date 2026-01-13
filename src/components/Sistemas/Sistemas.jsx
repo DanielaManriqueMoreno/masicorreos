@@ -4,7 +4,7 @@ import "./Sistemas.css";
 function Sistemas({ onSelect, onVolver }) {
   return (
     <div className="sistemas-container">
-      <div style={{ textAlign: "left", marginBottom: "20px" }}>
+      <div className="btn-volver-container">
         <button 
           className="btn-volver"
           onClick={onVolver}

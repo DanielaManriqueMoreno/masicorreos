@@ -8,7 +8,7 @@ function TalentoHumano({ onSelect, onVolver }) {
 
   return (
     <div className="talento-humano-container">
-      <div style={{ textAlign: "left", marginBottom: "20px" }}>
+      <div className="btn-volver-container">
         <button 
           className="btn-volver"
           onClick={onVolver}

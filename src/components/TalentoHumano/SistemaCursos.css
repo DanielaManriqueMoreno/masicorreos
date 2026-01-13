@@ -298,3 +298,16 @@ button:disabled {
   color: white;
 }
 
+/* Estilos movidos desde JSX */
+.input-file-cursos {
+  display: none;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #28a745 0%, #20c997 100%);
+  border-radius: 10px;
+  transition: width 0.3s ease;
+  width: var(--progress-width, 0%);
+}
+

@@ -282,3 +282,10 @@
   line-height: 1.4;
 }
 
+/* Estilos movidos desde JSX */
+.btn-volver-container-full {
+  width: 100%;
+  text-align: left;
+  margin-bottom: 20px;
+}
+

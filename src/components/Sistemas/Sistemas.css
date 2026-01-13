@@ -127,3 +127,9 @@
   text-align: center;
 }
 
+/* Estilos movidos desde JSX */
+.btn-volver-container {
+  text-align: left;
+  margin-bottom: 20px;
+}
+
