@@ -50,6 +50,41 @@
   font-size: 14px;
 }
 
+.crear-plantilla-section {
+  text-align: center;
+  margin: 30px 0;
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 10px;
+  color: white;
+}
+
+.btn-crear-plantilla-principal {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 15px 30px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 10px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+}
+
+.btn-crear-plantilla-principal:hover {
+  background-color: #218838;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+}
+
+.crear-plantilla-desc {
+  font-size: 14px;
+  opacity: 0.9;
+  margin: 0;
+}
+
 /* Selector de Plantilla */
 .plantilla-selector {
   background: white;
@@ -88,6 +123,30 @@
   margin-top: 10px;
   color: #dc3545;
   font-style: italic;
+}
+
+.no-plantillas-container {
+  text-align: center;
+  padding: 20px;
+}
+
+.btn-crear-primera-plantilla {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  margin-top: 15px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 10px rgba(40, 167, 69, 0.3);
+}
+
+.btn-crear-primera-plantilla:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
 }
 
 /* Información de Plantilla */
@@ -420,6 +479,24 @@
 .result-item.scheduled {
   background-color: #fff3cd;
   border: 2px solid #ffc107;
+}
+
+/* Estilos movidos desde JSX */
+.label-password {
+  margin-top: 10px;
+  display: block;
+}
+
+.input-file-hidden {
+  display: none;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #28a745 0%, #20c997 100%);
+  border-radius: 10px;
+  transition: width 0.3s ease;
+  width: var(--progress-width, 0%);
 }
 
 .result-item.failed {

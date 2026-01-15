@@ -4,7 +4,7 @@ import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import './SistemaPlantillas.css';
 
-const SistemaPlantillas = ({ onVolver, usuario }) => {
+const SistemaPlantillas = ({ onVolver, usuario, onNavigate }) => {
   const [plantillas, setPlantillas] = useState([]);
   const [plantillaSeleccionada, setPlantillaSeleccionada] = useState(null);
   const [file, setFile] = useState(null);
@@ -28,107 +28,42 @@ const SistemaPlantillas = ({ onVolver, usuario }) => {
   // Verificar que el servidor esté corriendo
   const verificarServidor = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/health', {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json'
-        }
-      });
-      
-      // Verificar content-type
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text();
-        throw new Error(`El servidor devolvió ${contentType || 'text/html'} en lugar de JSON. ¿Está el servidor corriendo?`);
-      }
-      
+      const response = await fetch('http://localhost:3001/api/health');
       if (!response.ok) {
         throw new Error(`Servidor respondió con error: ${response.status}`);
       }
-      
       const data = await response.json();
       if (data.status !== 'OK') {
         console.warn('Servidor reporta problemas:', data.message);
       }
     } catch (error) {
-      console.error('No se pudo conectar al servidor:', error);
-      if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-        alert('⚠️ No se pudo conectar al servidor.\n\nPor favor:\n1. Abre una terminal\n2. Ve a la carpeta server: cd server\n3. Ejecuta: npm start\n4. Espera a ver el mensaje "✅ SERVIDOR INICIADO CORRECTAMENTE"');
-      } else {
-        alert(`⚠️ Error de conexión: ${error.message}\n\nVerifica que el servidor esté corriendo en http://localhost:3001`);
-      }
+      console.error('Error de conexión:', error);
+      alert('⚠️ Error conectando al servidor. Verifica que esté corriendo en localhost:3001');
     }
   };
 
   const cargarPlantillas = async () => {
-    if (!usuario?.id) {
-      console.log('No hay usuario ID, no se pueden cargar plantillas');
-      return;
-    }
+    if (!usuario?.id) return;
 
     try {
       setCargandoPlantillas(true);
-      const url = `http://localhost:3001/api/templates?userId=${usuario.id}`;
-      console.log('Cargando plantillas desde:', url);
-      
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        }
+      const response = await fetch(`http://localhost:3001/api/templates?userId=${usuario.id}`, {
+        headers: { 'Accept': 'application/json' }
       });
       
-      console.log('Respuesta recibida:', response.status, response.statusText);
-      
-      // Verificar que el contenido sea JSON ANTES de intentar parsearlo
-      const contentType = response.headers.get('content-type') || '';
-      console.log('Content-Type:', contentType);
-      
-      if (!contentType.includes('application/json')) {
-        const text = await response.text();
-        console.error('❌ Respuesta no es JSON. Contenido recibido:', text.substring(0, 500));
-        
-        // Si es HTML, probablemente el servidor no tiene la ruta o hay un error
-        if (text.includes('<!DOCTYPE') || text.includes('<html')) {
-          throw new Error('El servidor devolvió HTML. Esto puede significar que:\n1. El servidor necesita ser reiniciado\n2. La ruta /api/templates no existe\n\nPor favor, reinicia el servidor: cd server && npm start');
-        }
-        throw new Error(`El servidor devolvió ${contentType} en lugar de JSON`);
-      }
-      
-      // Verificar si la respuesta es OK
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: `Error HTTP: ${response.status}` }));
-        console.error('Error HTTP:', response.status, errorData);
-        // Si es 404 o 500, puede ser que la tabla no exista, devolver array vacío
         if (response.status === 404 || response.status === 500) {
-          console.log('Servidor reportó error, pero continuando con array vacío');
           setPlantillas([]);
           return;
         }
-        throw new Error(errorData.message || `Error HTTP: ${response.status}`);
+        throw new Error(`Error HTTP: ${response.status}`);
       }
       
       const data = await response.json();
-      console.log('Datos recibidos:', data);
-      
-      if (data.success) {
-        setPlantillas(data.templates || []);
-        console.log('✅ Plantillas cargadas:', data.templates?.length || 0);
-      } else {
-        console.error('Error en respuesta:', data.message);
-        setPlantillas([]);
-      }
+      setPlantillas(data.success ? data.templates || [] : []);
     } catch (error) {
-      console.error('❌ Error cargando plantillas:', error);
-      // Si es un error de conexión, mostrar mensaje más claro
-      if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-        console.error('No se pudo conectar al servidor. Verifica que esté corriendo en http://localhost:3001');
-        alert('⚠️ No se pudo conectar al servidor.\n\nPor favor:\n1. Abre una terminal\n2. Ve a la carpeta server: cd server\n3. Ejecuta: npm start\n4. Espera a ver "✅ SERVIDOR INICIADO CORRECTAMENTE"');
-      } else {
-        // Mostrar el error específico
-        alert(`❌ Error: ${error.message}`);
-      }
+      console.error('Error cargando plantillas:', error);
+      alert('Error cargando plantillas: ' + error.message);
       setPlantillas([]);
     } finally {
       setCargandoPlantillas(false);
@@ -401,7 +336,14 @@ const SistemaPlantillas = ({ onVolver, usuario }) => {
           </select>
         )}
         {plantillas.length === 0 && !cargandoPlantillas && (
-          <p className="no-plantillas">No tienes plantillas creadas. Ve a "Crear Plantilla" para crear una.</p>
+          <div className="no-plantillas-container">
+            <p className="no-plantillas">No tienes plantillas creadas.</p>
+            {onNavigate && (
+              <button className="btn-crear-primera-plantilla" onClick={() => onNavigate('crear-plantilla')}>
+                ➕ Crear Primera Plantilla
+              </button>
+            )}
+          </div>
         )}
       </div>
 
@@ -438,7 +380,7 @@ const SistemaPlantillas = ({ onVolver, usuario }) => {
               placeholder="micita@umit.com.co"
               className="input-remitente"
             />
-            <label htmlFor="password-remitente" style={{ marginTop: '10px', display: 'block' }}>
+            <label htmlFor="password-remitente" className="label-password">
               Contraseña de Aplicaciones:
             </label>
             <input
@@ -484,7 +426,7 @@ const SistemaPlantillas = ({ onVolver, usuario }) => {
               id="file-input"
               accept=".csv,.xlsx"
               onChange={handleFileSelect}
-              style={{ display: 'none' }}
+              className="input-file-hidden"
             />
             {file ? (
               <div className="file-selected">
@@ -513,7 +455,10 @@ const SistemaPlantillas = ({ onVolver, usuario }) => {
           {isProcessing && (
             <div className="progress-container">
               <div className="progress-bar">
-                <div className="progress-fill" style={{ width: `${progress}%` }}></div>
+                <div 
+                  className="progress-fill" 
+                  style={{ '--progress-width': `${progress}%` }}
+                ></div>
               </div>
               <p className="progress-text">Procesando... {progress}%</p>
             </div>
