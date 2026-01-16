@@ -42,7 +42,7 @@ const CamposDinamicos = ({ formData, agregarVariable, eliminarVariable, insertar
                         <strong>Método 2:</strong> Haz clic en "➕ Agregar Campo" y luego usa "📎" para insertarlo donde quieras en el editor
                     </li>
                     <li>
-                        Los campos aparecerán como <code className="code-example">{{'NombreCampo'}}</code> y se convertirán en columnas en el Excel
+                        Los campos aparecerán como <code className="code-example">{'{{NombreCampo}}'}</code> y se convertirán en columnas en el Excel
                     </li>
                 </ol>
                 <div className="help-tip">

@@ -1,74 +1,42 @@
-const [plantillas, setPlantillas] = useState([]);
-const [plantillaSeleccionada, setPlantillaSeleccionada] = useState(null);
-const [cargando, setCargando] = useState(false);
-const [vista, setVista] = useState('lista'); 
-const [plantillaEditando, setPlantillaEditando] = useState(null);
+import { useState, useEffect, useCallback } from 'react';
+import { convertirTextoAHTML } from '../utils/editorHtmlUtils';
 
-const [formData, setFormData] = useState({
+export const usePlantillasCRUD = (usuario) => {
+
+  const [plantillas, setPlantillas] = useState([]);
+  const [plantillaSeleccionada, setPlantillaSeleccionada] = useState(null);
+  const [plantillaEditando, setPlantillaEditando] = useState(null);
+  const [cargando, setCargando] = useState(false);
+  const [vista, setVista] = useState('lista');
+
+  const [formData, setFormData] = useState({
     nombre: '',
     descripcion: '',
     htmlContent: '',
     categoria: 'personalizada',
     variables: [],
-    correoRemitente: 'micita@umit.com.co', // Correo remitente por defecto
-    camposDinamicos: [] // Nuevo: campos dinámicos editables
-});
+    correoRemitente: 'micita@umit.com.co',
+    camposDinamicos: []
+  });
 
-//----------------CARGA INICIAL------------------//
-const cargarPlantillas = async () => {
-    if (!usuario?.id) {
-      console.warn('No hay usuario identificado');
-      return;
-    }
+  // ---------------- CARGA INICIAL ----------------
+  const cargarPlantillas = useCallback(async () => {
+    if (!usuario?.id) return;
 
     try {
       setCargando(true);
-      const response = await fetch(`http://localhost:3001/api/templates?userId=${usuario.id}`);
-      
-      if (!response.ok) {
-        throw new Error(`Error HTTP: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        setPlantillas(data.templates || []);
-      } else {
-        console.error('Error en respuesta:', data.message);
-        if (!data.message?.includes('Table') && !data.message?.includes('tabla')) {
-          alert(`Error: ${data.message || 'No se pudieron cargar las plantillas'}`);
-        }
-      }
-    } catch (error) {
-      console.error('Error cargando plantillas:', error);
+      const res = await fetch(`http://localhost:3001/api/templates?userId=${usuario.id}`);
+      const data = await res.json();
+      if (data.success) setPlantillas(data.templates || []);
+    } catch (e) {
+      console.error(e);
     } finally {
       setCargando(false);
     }
-};
+  }, [usuario]);
 
-//------------------NAVEGACION - VISTA------------------//
-const nuevaPlantilla = () => {
-    resetForm();
-    setVista('crear');
-    setModoEditor('visual'); // Modo visual (texto simple) por defecto
-    setMostrarPreview(true);
-    
-    // Empezar con editor vacío, sin plantilla por defecto
-    setTimeout(() => {
-      setFormData({
-        nombre: '',
-        descripcion: '',
-        htmlContent: '', // Sin HTML por defecto
-        categoria: 'personalizada',
-        variables: [], // Sin variables predefinidas
-        correoRemitente: 'micita@umit.com.co',
-        camposDinamicos: [] // Sin campos dinámicos predefinidos
-      });
-      setContenidoVisual(''); // Editor de texto vacío
-    }, 100);
-};
-
-const resetForm = () => {
+  // ---------------- NAVEGACIÓN ----------------
+  const resetForm = () => {
     setFormData({
       nombre: '',
       descripcion: '',
@@ -79,189 +47,92 @@ const resetForm = () => {
       camposDinamicos: []
     });
     setPlantillaEditando(null);
-    setEditandoCampo(null);
-    setNuevoCampoNombre('');
-    setNuevoCampoValor('');
-    setContenidoVisual(''); // Limpiar también el contenido visual
-};
+  };
 
-const seleccionarPlantilla = (plantilla) => {
-    // Asegurar que las variables se parseen correctamente si vienen como string JSON
-    let plantillaConVariables = { ...plantilla };
-    if (plantilla.variables) {
-      try {
-        if (typeof plantilla.variables === 'string') {
-          plantillaConVariables.variables = JSON.parse(plantilla.variables);
-        } else if (Array.isArray(plantilla.variables)) {
-          plantillaConVariables.variables = plantilla.variables;
-        }
-        console.log('📋 Variables parseadas de la plantilla:', plantillaConVariables.variables);
-      } catch (error) {
-        console.error('Error parseando variables:', error);
-        plantillaConVariables.variables = [];
-      }
-    } else {
-      plantillaConVariables.variables = [];
-    }
-    
-    setPlantillaSeleccionada(plantillaConVariables);
+  const nuevaPlantilla = () => {
+    resetForm();
+    setVista('crear');
+  };
+
+  const seleccionarPlantilla = (plantilla) => {
+    setPlantillaSeleccionada(plantilla);
     setVista('enviar');
-};
+  };
 
-const editarPlantilla = async (id) => {
+  const editarPlantilla = async (id) => {
     try {
       setCargando(true);
-      const response = await fetch(`http://localhost:3001/api/templates/${id}?userId=${usuario?.id}`);
-      const data = await response.json();
-      
+      const res = await fetch(`http://localhost:3001/api/templates/${id}?userId=${usuario.id}`);
+      const data = await res.json();
+
       if (data.success) {
-        const template = data.template;
-        const variables = template.variables ? JSON.parse(template.variables) : [];
-        // Si hay variables, crear campos dinámicos
-        const camposDinamicos = variables.map(v => ({ 
-          nombre: v, 
-          valor: '', 
-          tipo: 'texto' 
-        }));
-        
+        const tpl = data.template;
+        const variables = tpl.variables ? JSON.parse(tpl.variables) : [];
+
         setFormData({
-          nombre: template.nombre,
-          descripcion: template.descripcion || '',
-          htmlContent: template.html_content,
-          categoria: template.categoria || 'personalizada',
-          variables: variables,
-          correoRemitente: template.correo_remitente || 'micita@umit.com.co',
-          camposDinamicos: camposDinamicos
+          nombre: tpl.nombre,
+          descripcion: tpl.descripcion || '',
+          htmlContent: tpl.html_content,
+          categoria: tpl.categoria || 'personalizada',
+          variables,
+          correoRemitente: tpl.correo_remitente || 'micita@umit.com.co',
+          camposDinamicos: variables.map(v => ({ nombre: v, valor: '' }))
         });
-        setPlantillaEditando(template);
+
+        setPlantillaEditando(tpl);
         setVista('crear');
-      } else {
-        alert('Error al cargar la plantilla');
       }
-    } catch (error) {
-      console.error('Error cargando plantilla:', error);
-      alert('Error al cargar la plantilla');
     } finally {
       setCargando(false);
     }
-};
+  };
 
-//------------------GUARDAR PLANTILLA------------------//
-const guardarPlantilla = async () => {
-    // Validar que haya nombre y contenido (ya sea HTML o texto visual)
-    const tieneContenido = formData.htmlContent.trim() || contenidoVisual.trim();
-    
-    if (!formData.nombre.trim() || !tieneContenido) {
-      alert('El nombre y el contenido de la plantilla son obligatorios');
-      return;
-    }
+  const guardarPlantilla = async () => {
+    if (!formData.nombre.trim()) return alert('Nombre obligatorio');
 
-    if (!usuario?.id) {
-      alert('Error: No se pudo identificar al usuario. Por favor, inicia sesión nuevamente.');
-      return;
-    }
+    let html = formData.htmlContent.trim()
+      ? formData.htmlContent
+      : convertirTextoAHTML('');
+
+    const url = plantillaEditando
+      ? `http://localhost:3001/api/templates/${plantillaEditando.id}`
+      : `http://localhost:3001/api/templates`;
+
+    const method = plantillaEditando ? 'PUT' : 'POST';
 
     try {
       setCargando(true);
-      
-      // Si estamos en modo visual y hay contenido visual pero no HTML, convertir
-      let htmlParaGuardar = formData.htmlContent;
-      if (modoEditor === 'visual' && contenidoVisual.trim() && !htmlParaGuardar.trim()) {
-        htmlParaGuardar = convertirTextoAHTML(contenidoVisual);
-      }
-      
-      // Si aún no hay HTML, generar desde el texto visual
-      if (!htmlParaGuardar.trim() && contenidoVisual.trim()) {
-        htmlParaGuardar = convertirTextoAHTML(contenidoVisual);
-      }
-      
-      const url = plantillaEditando 
-        ? `http://localhost:3001/api/templates/${plantillaEditando.id}`
-        : 'http://localhost:3001/api/templates';
-      
-      const method = plantillaEditando ? 'PUT' : 'POST';
-      
-      console.log('💾 Guardando plantilla:', {
-        nombre: formData.nombre,
-        htmlLength: htmlParaGuardar.length,
-        variables: formData.variables,
-        variablesCount: formData.variables.length
-      });
-      
-      // Asegurar que las variables sean un array
-      const variablesParaGuardar = Array.isArray(formData.variables) 
-        ? formData.variables 
-        : [];
-      
-      const response = await fetch(url, {
+      const res = await fetch(url, {
         method,
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: usuario.id,
-          nombre: formData.nombre.trim(),
-          descripcion: formData.descripcion.trim(),
-          htmlContent: htmlParaGuardar,
-          variables: variablesParaGuardar,
-          categoria: formData.categoria,
-          correoRemitente: formData.correoRemitente,
-          camposDinamicos: formData.camposDinamicos || []
+          ...formData,
+          htmlContent: html
         })
       });
 
-      const data = await response.json();
-      
+      const data = await res.json();
       if (data.success) {
-        alert(plantillaEditando ? '✅ Plantilla actualizada exitosamente' : '✅ Plantilla creada exitosamente');
         resetForm();
         cargarPlantillas();
         setVista('lista');
-        setPlantillaSeleccionada(null);
-      } else {
-        alert(`❌ Error: ${data.message || 'No se pudo guardar la plantilla'}`);
       }
-    } catch (error) {
-      console.error('Error guardando plantilla:', error);
-      alert(`❌ Error de conexión: ${error.message}. Verifica que el servidor esté corriendo en http://localhost:3001`);
     } finally {
       setCargando(false);
     }
+  };
+
+  const eliminarPlantilla = async (id) => {
+    if (!confirm('¿Eliminar plantilla?')) return;
+
+    await fetch(`http://localhost:3001/api/templates/${id}?userId=${usuario.id}`, {
+      method: 'DELETE'
+    });
+
+    cargarPlantillas();
+  };
+
+  return {plantillas, plantillaSeleccionada, plantillaEditando, vista, cargando, formData, setFormData, setVista, setPlantillaSeleccionada, cargarPlantillas,nuevaPlantilla, seleccionarPlantilla, editarPlantilla, guardarPlantilla, eliminarPlantilla, resetForm,
+  };
 };
-
-//------------------ELIMINAR PLANTILLA------------------//
-const eliminarPlantilla = async (id, nombre) => {
-    if (!confirm(`¿Está seguro de eliminar la plantilla "${nombre}"?`)) {
-      return;
-    }
-
-    try {
-      setCargando(true);
-      const response = await fetch(`http://localhost:3001/api/templates/${id}?userId=${usuario?.id}`, {
-        method: 'DELETE'
-      });
-
-      const data = await response.json();
-      
-      if (data.success) {
-        alert('Plantilla eliminada exitosamente');
-        cargarPlantillas();
-        if (plantillaSeleccionada?.id === id) {
-          setPlantillaSeleccionada(null);
-          setVista('lista');
-        }
-      } else {
-        alert(data.message || 'Error al eliminar la plantilla');
-      }
-    } catch (error) {
-      console.error('Error eliminando plantilla:', error);
-      alert('Error al eliminar la plantilla');
-    } finally {
-      setCargando(false);
-    }
-};
-
-return {
-    plantillas, plantillaSeleccionada, plantillaEditando, vista, cargando, formData, setFormData, setVista, setPlantillaSeleccionada, cargarPlantillas, nuevaPlantilla, seleccionarPlantilla, editarPlantilla, guardarPlantilla, eliminarPlantilla, resetForm,
-};
-

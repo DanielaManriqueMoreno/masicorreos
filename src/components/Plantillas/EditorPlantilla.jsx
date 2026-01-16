@@ -35,7 +35,7 @@ const EditorPlantilla = ({ formData, setFormData, modoEditor, setModoEditor, mos
                         <ul className="preview-variables">
                           <li>Escribe tu plantilla normalmente, como si fuera un correo o documento</li>
                           <li>Selecciona cualquier texto y haz clic en "🔄 Convertir en Variable" para convertirlo en campo dinámico</li>
-                          <li>Los campos dinámicos aparecerán como <code className="code-white">{{'NombreCampo'}}</code> y se llenarán desde Excel</li>
+                          <li>Los campos dinámicos aparecerán como <code className="code-white">{'{{NombreCampo}}'}</code> y se llenarán desde Excel</li>
                           <li>Puedes colocar los campos donde quieras, mezclados con texto normal</li>
                         </ul>
                     </div>
