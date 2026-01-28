@@ -5,6 +5,6 @@ export const AREA_TO_VISTA = {
   contabilidad: "contabilidad",
   radicacion: "radicacion",
   sistemas: "sistemas",
-  plantillas: "sistema-plantillas",
+  plantillas: "crear-plantilla",
   usuarios: "crear-usuario",
 };

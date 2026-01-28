@@ -1,27 +1,16 @@
-import { useEditorVisual } from "./useEditorVisual";
-import { useCamposDinamicos } from "./useCamposDinamicos";
-import { generarPreviewHTML } from "../utils/previewUtils";
+// useEditorPlantilla.js
+import { useState } from 'react';
 
-export const useEditorPlantilla = ({
-  formData,
-  setFormData,
-}) => {
-  const editorVisual = useEditorVisual({ formData, setFormData });
-  const campos = useCamposDinamicos({ formData, setFormData });
+export default function useEditorPlantilla() {
+  const [contenidoVisual, setContenidoVisual] = useState('');
 
-  const previewHTML = () => {
-    const html = generarPreviewHTML(
-      formData,
-      editorVisual.contenidoVisual
-    );
-    const win = window.open('', '_blank');
-    win.document.write(html);
-    win.document.close();
+  const handleVisualChange = (e) => {
+    setContenidoVisual(e.target.innerText);
   };
 
   return {
-    ...editorVisual,
-    ...campos,
-    previewHTML,
+    contenidoVisual,
+    handleVisualChange,
+    setContenidoVisual
   };
-};
+}

@@ -1,0 +1,56 @@
+
+.editor-intro {
+  margin-bottom: 10px;
+}
+
+.editor-tip {
+  display: block;
+  margin-top: 6px;
+  color: #aaa;
+  font-size: 13px;
+}
+
+.variable-chip {
+  display: inline-block;
+  background: #1f8ef1;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 12px;
+  margin: 4px;
+  font-size: 13px;
+}
+
+#contenidoVisual {
+  min-height: 220px;
+  padding: 14px;
+  border: 2px dashed #4da3ff;
+  border-radius: 8px;
+  background: #1e1e1e;
+  color: #fff;
+  outline: none;
+  cursor: text;
+}
+
+#contenidoVisual:empty::before {
+  content: attr(data-placeholder);
+  color: #888;
+}
+
+.editor-textarea {
+  min-height: 220px;
+  border: 1px solid #ccc;
+  padding: 12px;
+  border-radius: 6px;
+  background: #fff;
+  outline: none;
+  font-size: 14px;
+}
+
+.editor-textarea:empty::before {
+  content: attr(data-placeholder);
+  color: #999;
+}
+
+.preview-section{
+  color:#1e1e1e
+}

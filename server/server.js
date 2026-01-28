@@ -1203,7 +1203,6 @@ app.post('/api/send-dengue', upload.single('file'), async (req, res) => {
 });
 
 // ==================== ENDPOINTS DE PLANTILLAS ====================
-
 // Obtener todas las plantillas del usuario
 app.get('/api/templates', async (req, res) => {
   console.log('📥 Petición recibida en /api/templates', { query: req.query, method: req.method });
@@ -1370,6 +1369,23 @@ app.put('/api/templates/:id', async (req, res) => {
     console.error('Error actualizando plantilla:', error);
     res.status(500).json({ success: false, message: error.message });
   }
+});
+
+//Guardar Plantilla 
+app.post('/api/plantillas', async (req, res) => {
+  const { nombre, subject, htmlContent } = req.body;
+
+  if (!nombre || !subject || !htmlContent) {
+    return res.status(400).json({ success: false });
+  }
+
+  await pool.execute(
+    `INSERT INTO plantillas (nombre, subject, html_content)
+     VALUES (?, ?, ?)`,
+    [nombre, subject, htmlContent]
+  );
+
+  res.json({ success: true });
 });
 
 // Eliminar plantilla
@@ -1995,19 +2011,6 @@ app.post('/api/send-cursos', upload.single('file'), async (req, res) => {
 // ============================================
 // RUTAS PARA VER REGISTROS
 // ============================================
-
-// Obtener lista de usuarios
-app.get('/api/usuarios', async (req, res) => {
-  try {
-    const [usuarios] = await pool.execute(
-      'SELECT id, nombre, usuario, fecha_registro FROM usuarios WHERE is_active = TRUE ORDER BY nombre'
-    );
-    res.json({ success: true, usuarios });
-  } catch (error) {
-    console.error('Error obteniendo usuarios:', error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
 
 // Obtener registros de actividad
 app.get('/api/registros/actividad', async (req, res) => {

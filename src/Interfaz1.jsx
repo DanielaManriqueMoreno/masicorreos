@@ -1,6 +1,6 @@
 // src/Interfaz1.jsx
 import "./Interfaz1.css";
-import { useState } from "react";
+import { useState,setVista } from "react";
 import { AREA_TO_VISTA } from "./constants/areaToVista";
 
 import SistemaCitas from "./components/Citas/SistemaCitas";
@@ -12,7 +12,6 @@ import Sistemas from "./components/Sistemas/Sistemas";
 import Radicacion from "./components/Radicacion/Radicacion";
 import Contabilidad from "./components/Contabilidad/Contabilidad";
 import CrearPlantilla from "./components/Plantillas/CrearPlantilla";
-import SistemaPlantillas from "./components/Plantillas/SistemaPlantillas";
 import VerRegistros from "./components/Registros/VerRegistros";
 import Usuarios from "./components/Administrador/Usuarios";
 import Perfil from "./components/Perfil/Perfil";
@@ -72,9 +71,6 @@ function Interfaz1({ onSelect, onLogout, usuario }) {
       case "crear-plantilla":
         return <CrearPlantilla usuario={usuario} />;
 
-      case "sistema-plantillas":
-        return <SistemaPlantillas usuario={usuario} onNavigate={setVistaActual} />;
-
       case "ver-registros":
         return <VerRegistros usuario={usuario} />;
 
@@ -90,8 +86,7 @@ function Interfaz1({ onSelect, onLogout, usuario }) {
   return (
     <>
       <div className="interfaz-container">
-        <Sidebar
-          usuario={usuario}
+        <Sidebar usuario={usuario}
           areaActiva={areaActiva}
           setAreaActiva={setAreaActiva}
           setVistaActual={setVistaActual}
