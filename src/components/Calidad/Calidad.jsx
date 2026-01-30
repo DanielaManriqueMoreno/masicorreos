@@ -1,56 +1,57 @@
 // Calidad.jsx
+import { useEffect, useState } from "react";
 import "./Calidad.css";
 
-function Calidad({ onSelect, onVolver }) {
-  const opcionesCalidad = [
-    { id: "dengue", nombre: "Dengue", icono: "🦟", descripcion: "Información sobre prevención y cuidados del dengue", accion: () => onSelect("dengue") },
-    { id: "preparto", nombre: "Preparto", icono: "🤰", descripcion: "Cuidados y recomendaciones durante el embarazo", accion: () => onSelect("preparto") },
-    { id: "posparto", nombre: "Posparto", icono: "👶", descripcion: "Cuidados y recomendaciones después del parto", accion: () => onSelect("posparto") },
-    { id: "planificacion", nombre: "Planificación", icono: "📋", descripcion: "Información sobre métodos de planificación familiar", accion: () => onSelect("planificacion") }
-  ];
+function Calidad({ onVolver }) {
+  const AREA_ID = 2; // Calidad
+  const [plantillas, setPlantillas] = useState([]);
+  const [plantillaSeleccionada, setPlantillaSeleccionada] = useState(null);
+
+  useEffect(() => {
+    fetch(`/api/templates?area_id=${AREA_ID}`)
+      .then(res => res.json())
+      .then(data => setPlantillas(data));
+  }, []);
 
   return (
     <div className="calidad-container">
       <div className="btn-volver-container-full">
-        <button 
-          className="btn-volver"
-          onClick={onVolver}
-        >
+        <button className="btn-volver" onClick={onVolver}>
           ← Volver al Menú
-        </button> 
+        </button>
       </div>
 
-      <h1 className="main-title">Sistema de Calidad</h1>
-      <p className="main-subtitle">Selecciona el tipo de comunicación para calidad</p>
+      <h1 className="main-title">Calidad</h1>
+      <p className="main-subtitle">
+        Plantillas disponibles para el área de calidad
+      </p>
 
       <div className="cards-wrapper">
-        <div className="card card-red" onClick={() => onSelect("dengue")}>
-          <div className="card-icon">🦟</div>
-          <h3>Dengue</h3>
-          <p>Información sobre prevención y cuidados del dengue</p>
-        </div>
-
-        <div className="card card-pink" onClick={() => onSelect("preparto")}>
-          <div className="card-icon">🤰</div>
-          <h3>Preparto</h3>
-          <p>Cuidados y recomendaciones durante el embarazo</p>
-        </div>
-
-        <div className="card card-purple" onClick={() => onSelect("posparto")}>
-          <div className="card-icon">👶</div>
-          <h3>Posparto</h3>
-          <p>Cuidados y recomendaciones después del parto</p>
-        </div>
-
-        <div className="card card-orange" onClick={() => onSelect("planificacion")}>
-          <div className="card-icon">📋</div>
-          <h3>Planificación</h3>
-          <p>Información sobre métodos de planificación familiar</p>
-        </div>
+        {plantillas.length === 0 ? (
+          <p>No hay plantillas creadas aún</p>
+        ) : (
+          plantillas.map(p => (
+            <div
+              key={p.id}
+              className="card card-purple"
+              onClick={() => setPlantillaSeleccionada(p)}
+            >
+              <div className="card-icon">📧</div>
+              <h3>{p.nombre}</h3>
+              <p>{p.descripcion}</p>
+            </div>
+          ))
+        )}
       </div>
+
+      {plantillaSeleccionada && (
+        <ModalPlantilla
+          plantilla={plantillaSeleccionada}
+          onClose={() => setPlantillaSeleccionada(null)}
+        />
+      )}
     </div>
   );
 }
 
 export default Calidad;
-

@@ -1226,7 +1226,7 @@ app.get('/api/templates', async (req, res) => {
     const params = [];
 
     if (area_id) {
-      query += ' AND area_is = ?';
+      query += ' AND area_id = ?';
       params.push(area_id);
     }
 
@@ -1234,7 +1234,7 @@ app.get('/api/templates', async (req, res) => {
 
     res.json(rows);
   } catch (error) {
-    console.error(error);
+    console.error('Error cargando plantillas:', error);
     res.status(500).json({ success: false });
   }
 });
@@ -1255,7 +1255,7 @@ app.post('/api/templates', async (req, res) => {
 
     const [result] = await pool.execute(
       `INSERT INTO plantillas 
-       (user_id, nom_plantilla, descripcion, html_content, variables, area_is, estado) 
+       (user_id, nom_plantilla, descripcion, html_content, variables, area_id, estado) 
        VALUES (?, ?, ?, ?, ?, ?, 'ACTIVO')`,
       [userId, nombre, descripcion || '', htmlContent, variablesJson, area_id]
     );
@@ -1313,7 +1313,7 @@ app.put('/api/templates/:id', async (req, res) => {
       updateValues.push(JSON.stringify(variables));
     }
     if (area_id !== undefined) {
-      updateFields.push('area_is = ?');
+      updateFields.push('area_id = ?');
       updateValues.push(area_id);
     }
     if (isActive !== undefined) {
@@ -2045,32 +2045,6 @@ app.get('/api/registros/correos-plantillas', async (req, res) => {
   }
 });
 
-// Obtener plantillas
-app.get('/api/registros/plantillas', async (req, res) => {
-  try {
-    const { userId } = req.query;
-    let query = `
-      SELECT et.*, u.nombre as user_nombre, u.usuario as username
-      FROM plantillas et
-      JOIN usuarios u ON et.user_id = u.id
-    `;
-    const params = [];
-    
-    if (userId && userId !== 'todos') {
-      query += ' WHERE et.user_id = ?';
-      params.push(userId);
-    }
-    
-    query += ' ORDER BY et.created_at DESC';
-    
-    const [registros] = await pool.execute(query, params);
-    res.json({ success: true, registros });
-  } catch (error) {
-    console.error('Error obteniendo plantillas:', error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
 // Obtener correos fallidos (de todas las tablas)
 app.get('/api/registros/correos-fallidos', async (req, res) => {
   try {
@@ -2199,32 +2173,6 @@ app.get('/api/registros/correos-fallidos', async (req, res) => {
   } catch (error) {
     console.error('❌ Error obteniendo correos fallidos:', error);
     console.error('   Stack:', error.stack);
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-// Obtener usuarios registrados
-app.get('/api/registros/usuarios', async (req, res) => {
-  try {
-    const { userId } = req.query;
-    let query = `
-      SELECT 
-        id, nombre, usuario, fecha_registro, is_active
-      FROM usuarios
-    `;
-    const params = [];
-    
-    if (userId && userId !== 'todos') {
-      query += ' WHERE id = ?';
-      params.push(userId);
-    }
-    
-    query += ' ORDER BY fecha_registro DESC';
-    
-    const [registros] = await pool.execute(query, params);
-    res.json({ success: true, registros });
-  } catch (error) {
-    console.error('Error obteniendo usuarios:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 });

@@ -5,9 +5,7 @@ import { AREA_TO_VISTA } from "./constants/areaToVista";
 
 import SistemaCitas from "./components/Citas/SistemaCitas";
 import Calidad from "./components/Calidad/Calidad";
-import SistemaDengue from "./components/Calidad/SistemaDengue";
 import TalentoHumano from "./components/TalentoHumano/TalentoHumano";
-import SistemaCursos from "./components/TalentoHumano/SistemaCursos";
 import Sistemas from "./components/Sistemas/Sistemas";
 import Radicacion from "./components/Radicacion/Radicacion";
 import Contabilidad from "./components/Contabilidad/Contabilidad";
