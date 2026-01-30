@@ -54,17 +54,36 @@ export function usePlantillasCRUD() {
         ? `${API_URL}/${plantillaEditando}`
         : API_URL;
 
+      // 🔥 ADAPTAMOS LOS NOMBRES A LO QUE EL BACKEND ESPERA
+      const bodyEnviar = {
+        userId: payload.userId,               // id del usuario
+        nombre: payload.nombre,               // nombre de la plantilla
+        descripcion: payload.descripcion || '', // descripción opcional
+        htmlContent: payload.htmlContent,     // contenido HTML
+        variables: payload.variables || [],    // variables detectadas
+        area_id: payload.area_id              // área seleccionada
+      };
+
+      console.log("Enviando al backend:", bodyEnviar);
+
       const resp = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(bodyEnviar)
       });
 
-      if (!resp.ok) throw new Error('Error al guardar plantilla');
+      if (!resp.ok) {
+        // intentar leer el mensaje de error del backend
+        const errorData = await resp.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Error al guardar plantilla');
+      }
 
       setPlantillaEditando(null);
+      alert("Plantilla guardada exitosamente ✅");
+
     } catch (error) {
       console.error('Error guardarPlantilla:', error);
+      alert(error.message); // mostramos alerta rápida si falla
     } finally {
       setCargando(false);
     }

@@ -1,5 +1,4 @@
-import React from 'react';
-import { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import './CrearPlantilla.css';
 
 import PlantillaForm from './PlantillaForm';
@@ -10,7 +9,8 @@ import { usePlantillasCRUD } from "./hooks/usePlantillasCRUD";
 import { useVariablesPlantillas } from './hooks/useVariablesPlantillas';
 import { extraerVariablesDesdeTexto } from './utils/editorhtmlutils';
 
-const CrearPlantilla = ({ onVolver, usuario, areaId }) => {
+const CrearPlantilla = ({ onVolver, usuario }) => {
+  const [areas, setAreas] = useState([]);
 
   /* ================= CRUD PLANTILLAS ================= */
   const {
@@ -23,6 +23,30 @@ const CrearPlantilla = ({ onVolver, usuario, areaId }) => {
   /* ================= EDITOR ================= */
   const editor = useEditorPlantilla();
   
+  /* ================= CARGAR ÁREAS ================= */
+  useEffect(() => {
+    const cargarAreas = async () => {
+      try {
+        const resp = await fetch('/api/areas');
+        const data = await resp.json();
+
+        console.log("Áreas desde backend:", data);
+
+        if (Array.isArray(data)) {
+          setAreas(data);
+        } else {
+          console.error("La respuesta de áreas no es un array");
+          setAreas([]);
+        }
+      } catch (error) {
+        console.error("Error cargando áreas:", error);
+        setAreas([]);
+      }
+    };
+
+    cargarAreas();
+  }, []);
+
   /* ================= INPUTS ================= */
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -34,10 +58,21 @@ const CrearPlantilla = ({ onVolver, usuario, areaId }) => {
 
   /* ================= GUARDAR ================= */
   const handleGuardarPlantilla = () => {
+    if (!usuario?.documento) return alert("No se encontró usuario");
+    if (!formData.nombre) return alert("Ingrese un nombre para la plantilla");
+    if (!formData.area_id) return alert("Seleccione un área");
+    console.log({
+      userId: usuario.documento,
+      ...formData
+    });
+
     guardarPlantilla({
-      ...formData,
+      userId: usuario.documento,        
+      nombre: formData.nombre,
+      descripcion: formData.descripcion,
       htmlContent: editor.contenidoVisual,
-      area_id: areaId
+      variables: formData.variables,
+      area_id: formData.area_id         
     });
   };
 
@@ -64,13 +99,13 @@ const CrearPlantilla = ({ onVolver, usuario, areaId }) => {
       <PlantillaForm
         formData={formData}
         handleInputChange={handleInputChange}
+        areas={areas}   // <-- PASAMOS LAS ÁREAS
       />
 
       <EditorPlantilla
         contenidoVisual={editor.contenidoVisual}
         handleVisualChange={editor.handleVisualChange}
         formData={formData}
-        
       />
 
       <button

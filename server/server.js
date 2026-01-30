@@ -426,6 +426,20 @@ app.get('/api/auth/me', async (req, res) => {
   }
 });
 
+//====================== ENDPOINST AREAS ====================
+// Obtener todas las áreas
+app.get('/api/areas', async (req, res) => {
+  try {
+    const [areas] = await pool.execute(
+      'SELECT id, nombre FROM areas WHERE estado = "ACTIVO" ORDER BY nombre'
+    );
+
+    res.json(areas);
+  } catch (error) {
+    console.error('Error cargando áreas:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
 
 
 // ==================== ENDPOINTS DE RECUPERACIÓN DE CONTRASEÑA ====================
@@ -1203,97 +1217,57 @@ app.post('/api/send-dengue', upload.single('file'), async (req, res) => {
 });
 
 // ==================== ENDPOINTS DE PLANTILLAS ====================
-// Obtener todas las plantillas del usuario
+// Listar plantillas por área
 app.get('/api/templates', async (req, res) => {
-  console.log('📥 Petición recibida en /api/templates', { query: req.query, method: req.method });
   try {
-    const { userId } = req.query;
-    
-    if (!userId) {
-      console.log('❌ userId no proporcionado');
-      return res.status(400).json({ success: false, message: 'userId es requerido' });
-    }
-    
-    console.log('✅ userId recibido:', userId);
+    const { area_id } = req.query;
 
-    // Verificar que la tabla existe, si no, devolver array vacío
-    try {
-      const [templates] = await pool.execute(
-        'SELECT id, nombre, descripcion, variables, categoria, is_active, created_at, updated_at FROM email_templates WHERE user_id = ? ORDER BY created_at DESC',
-        [userId]
-      );
+    let query = 'SELECT * FROM plantillas WHERE estado = "ACTIVO"';
+    const params = [];
 
-      console.log('✅ Plantillas encontradas:', templates.length);
-      res.json({ success: true, templates: templates || [] });
-    } catch (dbError) {
-      // Si la tabla no existe, devolver array vacío en lugar de error
-      if (dbError.code === 'ER_NO_SUCH_TABLE' || dbError.message.includes('doesn\'t exist')) {
-        console.log('⚠️ Tabla email_templates no existe aún, devolviendo array vacío');
-        return res.json({ success: true, templates: [] });
-      }
-      console.error('❌ Error de base de datos:', dbError);
-      throw dbError;
+    if (area_id) {
+      query += ' AND area_is = ?';
+      params.push(area_id);
     }
+
+    const [rows] = await pool.execute(query, params);
+
+    res.json(rows);
   } catch (error) {
-    console.error('❌ Error obteniendo plantillas:', error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-// Obtener una plantilla por ID
-app.get('/api/templates/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { userId } = req.query;
-    
-    if (!userId) {
-      return res.status(400).json({ success: false, message: 'userId es requerido' });
-    }
-
-    const [templates] = await pool.execute(
-      'SELECT * FROM email_templates WHERE id = ? AND user_id = ?',
-      [id, userId]
-    );
-
-    if (templates.length === 0) {
-      return res.status(404).json({ success: false, message: 'Plantilla no encontrada' });
-    }
-
-    res.json({ success: true, template: templates[0] });
-  } catch (error) {
-    console.error('Error obteniendo plantilla:', error);
-    res.status(500).json({ success: false, message: error.message });
+    console.error(error);
+    res.status(500).json({ success: false });
   }
 });
 
 // Crear nueva plantilla
 app.post('/api/templates', async (req, res) => {
   try {
-    const { userId, nombre, descripcion, htmlContent, variables, categoria } = req.body;
-    
-    if (!userId || !nombre || !htmlContent) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'userId, nombre y htmlContent son requeridos' 
+    const { userId, nombre, descripcion, htmlContent, variables, area_id } = req.body;
+
+    if (!userId || !nombre || !htmlContent || !area_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'userId, nombre, htmlContent y area_id son requeridos'
       });
     }
 
-    const variablesJson = variables ? JSON.stringify(variables) : null;
+    const variablesJson = variables ? JSON.stringify(variables) : '';
 
     const [result] = await pool.execute(
-      'INSERT INTO email_templates (user_id, nombre, descripcion, html_content, variables, categoria) VALUES (?, ?, ?, ?, ?, ?)',
-      [userId, nombre, descripcion || '', htmlContent, variablesJson, categoria || 'personalizada']
+      `INSERT INTO plantillas 
+       (user_id, nom_plantilla, descripcion, html_content, variables, area_is, estado) 
+       VALUES (?, ?, ?, ?, ?, ?, 'ACTIVO')`,
+      [userId, nombre, descripcion || '', htmlContent, variablesJson, area_id]
     );
 
-    if (userId) {
-      await logActivity(parseInt(userId), 'Usuario', 'CREAR_PLANTILLA', `Plantilla creada: ${nombre}`);
-    }
+    await logActivity(parseInt(userId), 'Usuario', 'CREAR_PLANTILLA', `Plantilla creada: ${nombre}`);
 
-    res.status(201).json({ 
-      success: true, 
+    res.status(201).json({
+      success: true,
       message: 'Plantilla creada exitosamente',
-      templateId: result.insertId 
+      templateId: result.insertId
     });
+
   } catch (error) {
     console.error('Error creando plantilla:', error);
     res.status(500).json({ success: false, message: error.message });
@@ -1304,15 +1278,14 @@ app.post('/api/templates', async (req, res) => {
 app.put('/api/templates/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { userId, nombre, descripcion, htmlContent, variables, categoria, isActive } = req.body;
-    
+    const { userId, nombre, descripcion, htmlContent, variables, area_id, isActive } = req.body;
+
     if (!userId) {
       return res.status(400).json({ success: false, message: 'userId es requerido' });
     }
 
-    // Verificar que la plantilla pertenece al usuario
     const [existing] = await pool.execute(
-      'SELECT id FROM email_templates WHERE id = ? AND user_id = ?',
+      'SELECT id FROM plantillas WHERE id = ? AND user_id = ?',
       [id, userId]
     );
 
@@ -1320,12 +1293,11 @@ app.put('/api/templates/:id', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Plantilla no encontrada' });
     }
 
-    const variablesJson = variables ? JSON.stringify(variables) : null;
     const updateFields = [];
     const updateValues = [];
 
     if (nombre !== undefined) {
-      updateFields.push('nombre = ?');
+      updateFields.push('nom_plantilla = ?');
       updateValues.push(nombre);
     }
     if (descripcion !== undefined) {
@@ -1338,15 +1310,15 @@ app.put('/api/templates/:id', async (req, res) => {
     }
     if (variables !== undefined) {
       updateFields.push('variables = ?');
-      updateValues.push(variablesJson);
+      updateValues.push(JSON.stringify(variables));
     }
-    if (categoria !== undefined) {
-      updateFields.push('categoria = ?');
-      updateValues.push(categoria);
+    if (area_id !== undefined) {
+      updateFields.push('area_is = ?');
+      updateValues.push(area_id);
     }
     if (isActive !== undefined) {
-      updateFields.push('is_active = ?');
-      updateValues.push(isActive);
+      updateFields.push('estado = ?');
+      updateValues.push(isActive ? 'ACTIVO' : 'INACTIVO');
     }
 
     if (updateFields.length === 0) {
@@ -1356,36 +1328,18 @@ app.put('/api/templates/:id', async (req, res) => {
     updateValues.push(id, userId);
 
     await pool.execute(
-      `UPDATE email_templates SET ${updateFields.join(', ')} WHERE id = ? AND user_id = ?`,
+      `UPDATE plantillas SET ${updateFields.join(', ')} WHERE id = ? AND user_id = ?`,
       updateValues
     );
 
-    if (userId) {
-      await logActivity(parseInt(userId), 'Usuario', 'ACTUALIZAR_PLANTILLA', `Plantilla actualizada: ${id}`);
-    }
+    await logActivity(parseInt(userId), 'Usuario', 'ACTUALIZAR_PLANTILLA', `Plantilla actualizada: ${id}`);
 
     res.json({ success: true, message: 'Plantilla actualizada exitosamente' });
+
   } catch (error) {
     console.error('Error actualizando plantilla:', error);
     res.status(500).json({ success: false, message: error.message });
   }
-});
-
-//Guardar Plantilla 
-app.post('/api/plantillas', async (req, res) => {
-  const { nombre, subject, htmlContent } = req.body;
-
-  if (!nombre || !subject || !htmlContent) {
-    return res.status(400).json({ success: false });
-  }
-
-  await pool.execute(
-    `INSERT INTO plantillas (nombre, subject, html_content)
-     VALUES (?, ?, ?)`,
-    [nombre, subject, htmlContent]
-  );
-
-  res.json({ success: true });
 });
 
 // Eliminar plantilla
@@ -1400,7 +1354,7 @@ app.delete('/api/templates/:id', async (req, res) => {
 
     // Verificar que la plantilla pertenece al usuario
     const [existing] = await pool.execute(
-      'SELECT nombre FROM email_templates WHERE id = ? AND user_id = ?',
+      'SELECT nombre FROM plantillas WHERE id = ? AND user_id = ?',
       [id, userId]
     );
 
@@ -1409,7 +1363,7 @@ app.delete('/api/templates/:id', async (req, res) => {
     }
 
     await pool.execute(
-      'DELETE FROM email_templates WHERE id = ? AND user_id = ?',
+      'DELETE FROM plantillas WHERE id = ? AND user_id = ?',
       [id, userId]
     );
 
@@ -1439,7 +1393,7 @@ app.post('/api/send-custom-template', upload.single('file'), async (req, res) =>
 
     // Obtener la plantilla de la base de datos
     const [templates] = await pool.execute(
-      'SELECT * FROM email_templates WHERE id = ? AND user_id = ? AND is_active = TRUE',
+      'SELECT * FROM plantillas WHERE id = ? AND user_id = ? AND is_active = TRUE',
       [templateId, userId]
     );
 
@@ -2072,7 +2026,7 @@ app.get('/api/registros/correos-plantillas', async (req, res) => {
       SELECT cte.*, u.nombre as user_nombre, u.usuario as username, et.nombre as template_name
       FROM custom_template_emails cte
       JOIN usuarios u ON cte.user_id = u.id
-      LEFT JOIN email_templates et ON cte.template_id = et.id
+      LEFT JOIN plantillas et ON cte.template_id = et.id
     `;
     const params = [];
     
@@ -2097,7 +2051,7 @@ app.get('/api/registros/plantillas', async (req, res) => {
     const { userId } = req.query;
     let query = `
       SELECT et.*, u.nombre as user_nombre, u.usuario as username
-      FROM email_templates et
+      FROM plantillas et
       JOIN usuarios u ON et.user_id = u.id
     `;
     const params = [];

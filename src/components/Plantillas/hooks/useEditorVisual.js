@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { convertirTextoAHTML } from '../utils/editorHtmlUtils';
+import { convertirTextoAHTML } from './utils/editorHtmlUtils';
 import { PLANTILLA_BASE } from '../../../constants/plantillaConstants';
 
 export const useEditorVisual = ({ formData, setFormData }) => {
