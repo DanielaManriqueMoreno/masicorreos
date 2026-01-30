@@ -57,24 +57,30 @@ const CrearPlantilla = ({ onVolver, usuario }) => {
   };
 
   /* ================= GUARDAR ================= */
-  const handleGuardarPlantilla = () => {
+  const handleGuardarPlantilla = async () => {
     if (!usuario?.documento) return alert("No se encontró usuario");
     if (!formData.nombre) return alert("Ingrese un nombre para la plantilla");
     if (!formData.area_id) return alert("Seleccione un área");
-    console.log({
-      userId: usuario.documento,
-      ...formData
-    });
 
-    guardarPlantilla({
-      userId: usuario.documento,        
+    const result = await guardarPlantilla({
+      userId: usuario.documento,
       nombre: formData.nombre,
       descripcion: formData.descripcion,
       htmlContent: editor.contenidoVisual,
       variables: formData.variables,
-      area_id: formData.area_id         
+      area_id: formData.area_id
     });
+
+    setFormData({
+      nombre: '',
+      descripcion: '',
+      area_id: '',
+      variables: []
+    });
+
+    editor.resetEditor();
   };
+
 
   /* ================= VARIABLES PLANTILLA ================= */
   const variables = useVariablesPlantillas({

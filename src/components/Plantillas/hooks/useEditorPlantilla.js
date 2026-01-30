@@ -8,9 +8,14 @@ export default function useEditorPlantilla() {
     setContenidoVisual(e.target.innerText);
   };
 
+  const resetEditor = () => {
+    setContenidoVisual('');
+  };
+
   return {
     contenidoVisual,
     handleVisualChange,
-    setContenidoVisual
+    setContenidoVisual,
+    resetEditor
   };
 }
