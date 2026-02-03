@@ -5,11 +5,12 @@ export default function ModalVistaPlantilla({
   onClose,
   onEditar
 }) {
+  console.log("Rendering ModalVistaPlantilla with plantilla:", plantilla);
   return (
     <div className="modal-overlay">
       <div className="modal-container">
         <header className="modal-header">
-          <h2>{plantilla.nombre}</h2>
+          <h2>{plantilla.nom_plantilla}</h2>
           <button className="modal-close" onClick={onClose}>✖</button>
         </header>
 
@@ -19,7 +20,7 @@ export default function ModalVistaPlantilla({
 
         <div
           className="modal-preview"
-          dangerouslySetInnerHTML={{ __html: plantilla.contenido }}
+          dangerouslySetInnerHTML={{ __html: plantilla.html_content }}
         />
 
         <footer className="modal-actions">

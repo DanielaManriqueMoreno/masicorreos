@@ -2,6 +2,17 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import "./Calidad.css";
 
+const extraerVariables = (html) => {
+  const regex = /{{(.*?)}}/g;
+  const matches = [...html.matchAll(regex)];
+
+  return matches.map(m => ({
+    nombre: m[1],
+    valor: ""
+  }));
+};
+
+
 function Calidad({ onVolver }) {
   const [plantillas, setPlantillas] = useState([]);
   const [plantillaSeleccionada, setPlantillaSeleccionada] = useState(null);
@@ -30,6 +41,7 @@ function Calidad({ onVolver }) {
 
     cargarPlantillas();
   }, []);
+console.log("Plantilla seleccionada:", plantillaSeleccionada);
 
   return (
     <div className="calidad-container">
@@ -43,10 +55,15 @@ function Calidad({ onVolver }) {
       ) : (
         <div className="plantillas-list">
           {plantillas.map((p) => (
-            <div
+            <div className="plantilla-card"
               key={p.id}
-              className="plantilla-card"
-              onClick={() => setPlantillaSeleccionada(p)}
+              onClick={() => setPlantillaSeleccionada({
+                  id: p.id,
+                  nombre: p.nom_plantilla,
+                  descripcion: p.descripcion,
+                  contenido: p.html_content
+                })
+              }
             >
               <div className="plantilla-info">
                 <h3 className="plantilla-nombre">
@@ -70,20 +87,31 @@ function Calidad({ onVolver }) {
         <div className="modal-overlay">
           <div className="modal">
             <h2>{plantillaSeleccionada.nombre}</h2>
+            <p className="modal-description">
+              {plantillaSeleccionada.descripcion || "Sin descripción"}
+            </p>
 
-            <div
-              className="plantilla-preview"
-              dangerouslySetInnerHTML={{
-                __html: plantillaSeleccionada.contenido
-              }}
-            />
-
+            <div className="plantilla-preview">
+              {plantillaSeleccionada.html_content ? (
+                <div
+                  dangerouslySetInnerHTML={{
+                    __html: plantillaSeleccionada.html_content
+                  }}
+                />
+              ) : (
+                <div className="preview-empty">
+                  <p>📄 Esta plantilla no tiene html_content visual</p>
+                  <small>Puedes editarla para agregar el cuerpo del mensaje</small>
+                </div>
+              )}
+            </div>
             <div className="modal-actions">
               <button
                 className="btn-primary"
                 onClick={() => {
-                  modoEdicion
-                  alert("Editar plantilla");
+                  setDescripcionEditada(plantillaSeleccionada.descripcion);
+                  setVariables(extraerVariables(plantillaSeleccionada.html_content));
+                  setModoEdicion(true);
                 }}
               >
                 Editar
