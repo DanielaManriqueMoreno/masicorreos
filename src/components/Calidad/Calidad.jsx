@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import "./Calidad.css";
+import ModalVistaPlantilla from "../modals/ModalVistaPlantilla";
 
 const extraerVariables = (html) => {
   const regex = /{{(.*?)}}/g;
@@ -85,56 +86,20 @@ console.log("Contenido render:",plantillaSeleccionada?.contenido);
 
       {/* MODAL PREVIEW */}
       {plantillaSeleccionada && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <h2>{plantillaSeleccionada.nombre}</h2>
-            <p className="modal-description">
-              {plantillaSeleccionada.descripcion || "Sin descripción"}
-            </p>
-
-            <div className="plantilla-preview">
-              {plantillaSeleccionada.contenido? (
-                <div className="plantilla-preview">
-                  {plantillaSeleccionada.contenido}
-                </div>
-              ) : (
-                <div className="preview-empty">
-                  <p>📄 Esta plantilla no tiene contenido visual</p>
-                  <small>Puedes editarla para agregar el cuerpo del mensaje</small>
-                </div>
-              )}
-            </div>
-            <div className="modal-actions">
-              <button
-                className="btn-primary"
-                onClick={() => {
-                  setDescripcionEditada(plantillaSeleccionada.descripcion);
-                  setVariables(extraerVariables(plantillaSeleccionada.html_content));
-                  setModoEdicion(true);
-                }}
-              >
-                Editar
-              </button>
-
-              <button
-                className="btn-secondary"
-                onClick={() => {
-                  // luego lo conectamos al excel
-                  alert("Descargar plantilla");
-                }}
-              >
-                Descargar
-              </button>
-
-              <button
-                className="btn-cancel"
-                onClick={() => setPlantillaSeleccionada(null)}
-              >
-                Cancelar
-              </button>
-            </div>
-          </div>
-        </div>
+        <ModalVistaPlantilla
+          plantilla={{
+            id: plantillaSeleccionada.id,
+            nom_plantilla: plantillaSeleccionada.nombre,
+            descripcion: plantillaSeleccionada.descripcion,
+            html_content: plantillaSeleccionada.contenido
+          }}
+          onClose={() => setPlantillaSeleccionada(null)}
+          onEditar={() => {
+            setDescripcionEditada(plantillaSeleccionada.descripcion);
+            setVariables(extraerVariables(plantillaSeleccionada.contenido));
+            setModoEdicion(true);
+          }}
+        />
       )}
 
       {modoEdicion && (

@@ -1,4 +1,4 @@
-import "./ModalPlantilla.css";
+import "./ModalVistaPlantilla.css";
 
 export default function ModalVistaPlantilla({
   plantilla,
