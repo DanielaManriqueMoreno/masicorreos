@@ -42,6 +42,7 @@ function Calidad({ onVolver }) {
     cargarPlantillas();
   }, []);
 console.log("Plantilla seleccionada:", plantillaSeleccionada);
+console.log("Contenido render:",plantillaSeleccionada?.contenido);
 
   return (
     <div className="calidad-container">
@@ -92,15 +93,13 @@ console.log("Plantilla seleccionada:", plantillaSeleccionada);
             </p>
 
             <div className="plantilla-preview">
-              {plantillaSeleccionada.html_content ? (
-                <div
-                  dangerouslySetInnerHTML={{
-                    __html: plantillaSeleccionada.html_content
-                  }}
-                />
+              {plantillaSeleccionada.contenido? (
+                <div className="plantilla-preview">
+                  {plantillaSeleccionada.contenido}
+                </div>
               ) : (
                 <div className="preview-empty">
-                  <p>📄 Esta plantilla no tiene html_content visual</p>
+                  <p>📄 Esta plantilla no tiene contenido visual</p>
                   <small>Puedes editarla para agregar el cuerpo del mensaje</small>
                 </div>
               )}

@@ -55,6 +55,26 @@
   color:#111827
 }
 
+.plantilla-preview {
+  margin: 16px 0;
+  padding: 14px;
+  background: #111827;
+  border-radius: 8px;
+}
+
+.plantilla-texto {
+  white-space: pre-wrap;
+  color: #111827;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.preview-empty {
+  color: #111827;
+  text-align: center;
+}
+
+
 @media (max-width: 1200px) {
   .cards-wrapper {
     grid-template-columns: repeat(2, 1fr);
