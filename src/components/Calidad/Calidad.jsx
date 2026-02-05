@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import "./Calidad.css";
 import ModalVistaPlantilla from "../modals/ModalVistaPlantilla";
+import ModalEditarPlantilla from "../modals/ModalEditarPlantilla";
 
 const extraerVariables = (html) => {
   const regex = /{{(.*?)}}/g;
@@ -13,13 +14,11 @@ const extraerVariables = (html) => {
   }));
 };
 
-
 function Calidad({ onVolver }) {
   const [plantillas, setPlantillas] = useState([]);
   const [plantillaSeleccionada, setPlantillaSeleccionada] = useState(null);
-  const [modoEdicion, setModoEdicion] = useState(false);
+  const [plantillaEditando, setPlantillaEditando] = useState(null);
   const [variables, setVariables] = useState([]);
-  const [descripcionEditada, setDescripcionEditada] = useState("");
   const [loading, setLoading] = useState(true);
 
   const AREA_ID_CALIDAD = 6; 
@@ -84,7 +83,6 @@ console.log("Contenido render:",plantillaSeleccionada?.contenido);
         </div>
       )}
 
-      {/* MODAL PREVIEW */}
       {plantillaSeleccionada && (
         <ModalVistaPlantilla
           plantilla={{
@@ -95,68 +93,29 @@ console.log("Contenido render:",plantillaSeleccionada?.contenido);
           }}
           onClose={() => setPlantillaSeleccionada(null)}
           onEditar={() => {
-            setDescripcionEditada(plantillaSeleccionada.descripcion);
-            setVariables(extraerVariables(plantillaSeleccionada.contenido));
-            setModoEdicion(true);
+            setPlantillaEditando(plantillaSeleccionada);
+            setPlantillaSeleccionada(null);
           }}
         />
       )}
 
-      {modoEdicion && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <h2>Editar plantilla</h2>
+      {plantillaEditando && (
+          <ModalEditarPlantilla
+            plantilla={plantillaEditando}
+            onClose={() => setPlantillaEditando(null)}
+            onSave={(plantillaActualizada) => {
+              console.log("Guardar plantilla:", plantillaActualizada);
 
-            <label>Descripción</label>
-            <textarea
-              value={descripcionEditada}
-              onChange={(e) => setDescripcionEditada(e.target.value)}
-            />
+              // actualizar en pantalla
+              setPlantillaSeleccionada(plantillaActualizada);
 
-            <h3>Variables</h3>
+              // cerrar modal
+              setPlantillaEditando(null);
 
-            {variables.length === 0 ? (
-              <p>No hay variables en esta plantilla</p>
-            ) : (
-              variables.map((v, i) => (
-                <div key={i} className="variable-row">
-                  <label>{v.nombre}</label>
-                  <input
-                    type="text"
-                    value={v.valor}
-                    onChange={(e) => {
-                      const nuevas = [...variables];
-                      nuevas[i].valor = e.target.value;
-                      setVariables(nuevas);
-                    }}
-                  />
-                </div>
-              ))
-            )}
-
-            <div className="modal-actions">
-              <button
-                className="btn-primary"
-                onClick={() => {
-                  console.log("Descripción:", descripcionEditada);
-                  console.log("Variables:", variables);
-                  alert("Listo para guardar / generar Excel");
-                  setModoEdicion(false);
-                }}
-              >
-                Guardar
-              </button>
-
-              <button
-                className="btn-cancel"
-                onClick={() => setModoEdicion(false)}
-              >
-                Cancelar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+              // 🔜 aquí luego conectamos API
+            }}
+          />
+        )}
     </div>
   );
 }

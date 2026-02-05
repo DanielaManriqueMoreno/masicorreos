@@ -1,5 +1,5 @@
 /* ===== OVERLAY ===== */
-.modal-overlay {
+/* .modal-overlay {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.55);
@@ -7,7 +7,7 @@
   align-items: center;
   justify-content: center;
   z-index: 1000;
-}
+} */
 
 /* ===== CONTENEDOR ===== */
 .modal-container,
@@ -23,11 +23,11 @@
 }
 
 /* ===== HEADER ===== */
-.modal-header {
+/* .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-}
+} */
 
 .modal-header h2 {
   margin: 0;
@@ -86,11 +86,11 @@
   font-weight: 500;
 }
 /* ===== ACCIONES ===== */
-.modal-actions {
+/* .modal-actions {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-}
+} */
 
 .btn-primary {
   background: #2563eb;

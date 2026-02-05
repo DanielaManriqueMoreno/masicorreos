@@ -1,5 +1,5 @@
 import { useState } from "react";
-import "./ModalPlantilla.css";
+import "./ModalEditarPlantilla.css";
 
 export default function ModalEditarPlantilla({
   plantilla,
@@ -7,37 +7,54 @@ export default function ModalEditarPlantilla({
   onSave
 }) {
   const [descripcion, setDescripcion] = useState(plantilla.descripcion || "");
+  const [contenido, setContenido] = useState(plantilla.contenido || "");
+
+  const extraerVariables = (html) => {
+    const regex = /{{(.*?)}}/g;
+    return [...html.matchAll(regex)].map(m => m[1]);
+  };
 
   const handleGuardar = () => {
     onSave({
       ...plantilla,
-      descripcion
+      descripcion,
+      contenido
     });
   };
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-container">
-        <header className="modal-header">
+    <div className="editar-overlay">
+      <div className="editar-modal">
+        <header className="editar-header">
           <h2>Editar plantilla</h2>
-          <button className="modal-close" onClick={onClose}>✖</button>
         </header>
 
-        <div className="modal-body">
+        <div className="editar-body">
           <label>Descripción</label>
-          <textarea
-            value={descripcion}
-            onChange={e => setDescripcion(e.target.value)}
-            rows={4}
-          />
+          <textarea value={descripcion} onChange={e => setDescripcion(e.target.value)} rows={4}/>
+          <label>Contenido de la plantilla</label>
+          <textarea value={contenido}  onChange={e => setContenido(e.target.value)} rows={8} />
+        </div>
+        <div className="editar-variables">
+          <h4>Variables detectadas</h4>
+
+          {extraerVariables(contenido).length === 0 ? (
+            <p>No hay variables en el contenido</p>
+          ) : (
+            <ul>
+              {extraerVariables(contenido).map((v, i) => (
+                <li key={i}>{`{{${v}}}`}</li>
+              ))}
+            </ul>
+          )}
         </div>
 
-        <footer className="modal-actions">
-          <button className="btn-edit" onClick={handleGuardar}>
+        <footer className="editar-actions">
+          <button className="editar-save" onClick={handleGuardar}>
             💾 Guardar
           </button>
 
-          <button className="btn-cancel" onClick={onClose}>
+          <button className="editar-cancel" onClick={onClose}>
             ❌ Cancelar
           </button>
         </footer>

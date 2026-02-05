@@ -785,437 +785,6 @@ const startScheduler = () => {
   console.log('✅ [SCHEDULER] Scheduler activo - revisando correos cada minuto');
 };
 
-// Endpoint: Enviar correos de Citas
-app.post('/api/send-citas', upload.single('file'), async (req, res) => {
-  try {
-    const { userId, username } = req.body;
-    const { doSend } = req.body; // 'true' o 'false' como string
-    
-    if (!req.file) {
-      return res.status(400).json({ success: false, message: 'No se proporcionó archivo' });
-    }
-
-    // Leer archivo Excel/CSV
-    const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
-    const sheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[sheetName];
-    const data = XLSX.utils.sheet_to_json(worksheet);
-
-    if (data.length === 0) {
-      return res.status(400).json({ success: false, message: 'El archivo está vacío' });
-    }
-
-    // Validar columnas requeridas
-    const REQUIRED_COLUMNS = [
-      'Email', 'Nombre del Paciente', 'Fecha de la Cita', 'Hora de la Cita',
-      'Nombre del Médico/a', 'Lugar de la cita', 'Tipo de cita', 'Asunto', 'Especialidad'
-    ];
-    
-    const missingColumns = REQUIRED_COLUMNS.filter(col => !data[0] || !Object.keys(data[0]).includes(col));
-    if (missingColumns.length > 0) {
-      return res.status(400).json({ success: false, message: `Faltan columnas: ${missingColumns.join(', ')}` });
-    }
-
-    let sent = 0;
-    let scheduled = 0;
-    let failed = [];
-
-    // Procesar en lotes para evitar problemas de memoria
-    const BATCH_SIZE = 50; // Procesar 50 correos a la vez
-    const totalRows = data.length;
-    
-    console.log(`📊 Procesando ${totalRows} filas en lotes de ${BATCH_SIZE}...`);
-
-    for (let i = 0; i < data.length; i += BATCH_SIZE) {
-      const batch = data.slice(i, i + BATCH_SIZE);
-      console.log(`📦 Procesando lote ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(totalRows / BATCH_SIZE)} (filas ${i + 1}-${Math.min(i + BATCH_SIZE, totalRows)})...`);
-
-      for (let j = 0; j < batch.length; j++) {
-        const row = batch[j];
-        const rowIndex = i + j + 2; // +2 porque Excel empieza en fila 2 (fila 1 es encabezados)
-        
-        try {
-          const email = String(row.Email || '').trim();
-          
-          if (!isValidEmail(email)) {
-            throw new Error('Email inválido o vacío');
-          }
-
-          const html = renderCitasTemplate(row);
-          const fechaFormateada = formatDateForSubject(row['Fecha de la Cita']);
-          const subject = `${row['Asunto'] || 'Recordatorio de Cita'} - ${row['Especialidad'] || ''} - ${fechaFormateada} - ${row['Hora de la Cita'] || ''}`;
-
-          // Verificar si hay programación
-          const fechaProgramada = row['Fecha Programada'];
-          const horaProgramada = row['Hora Programada'];
-          const scheduledDatetime = parseDatetime(fechaProgramada, horaProgramada);
-
-          if (doSend === 'true') {
-            if (scheduledDatetime) {
-              // Programar envío
-              if (await scheduleEmail(
-                parseInt(userId),
-                email,
-                row['Nombre del Paciente'],
-                row['Fecha de la Cita'],
-                subject,
-                html,
-                scheduledDatetime
-              )) {
-                scheduled++;
-                await logEmail(parseInt(userId), email, row['Nombre del Paciente'], row['Fecha de la Cita'], subject, 'PROGRAMADO');
-              } else {
-                throw new Error('No se pudo programar el email');
-              }
-            } else {
-              // Envío inmediato
-              await sendHtmlEmail(email, subject, html);
-              sent++;
-              
-              // Log de forma asíncrona (no esperar) para no ralentizar
-              logEmail(parseInt(userId), email, row['Nombre del Paciente'], row['Fecha de la Cita'], subject, 'ENVIADO').catch(err => console.error('Error en log:', err));
-              
-              // Pausa de 1 segundo entre correos para evitar saturar conexiones
-              // Esto da tiempo a Gmail de procesar cada conexión correctamente
-              if (j < batch.length - 1 || i + BATCH_SIZE < data.length) {
-                await new Promise(resolve => setTimeout(resolve, 1000));
-              }
-            }
-          } else {
-            // Modo preview - solo log
-            await logEmail(parseInt(userId), email, row['Nombre del Paciente'], row['Fecha de la Cita'], subject, 'PREVIEW_GENERADO');
-            sent++;
-          }
-        } catch (error) {
-          const errorMsg = error.message.includes('demasiado grande') || error.message.includes('tamaño') 
-            ? `Fila ${rowIndex}: ${error.message}` 
-            : `Fila ${rowIndex}: ${error.message}`;
-          failed.push({ row: rowIndex, error: errorMsg });
-          console.error(`❌ Error en fila ${rowIndex}: ${error.message}`);
-          const subject = `${row['Asunto'] || 'Recordatorio de Cita'} - ${row['Especialidad'] || ''}`;
-          await logEmail(parseInt(userId), row.Email || '', row['Nombre del Paciente'] || '', row['Fecha de la Cita'] || '', subject, 'ERROR', errorMsg);
-          
-          // ✅ GUARDAR EN TABLA correosfallidosdesistemascitas
-          try {
-            const html = renderCitasTemplate(row);
-            await pool.execute(
-              `INSERT INTO correosfallidosdesistemascitas 
-               (user_id, recipient_email, patient_name, appointment_date, appointment_time, tipo_cita, subject, html_content, error_message, from_email) 
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-              [
-                parseInt(userId),
-                String(row.Email || '').trim(),
-                row['Nombre del Paciente'] || '',
-                row['Fecha de la Cita'] || '',
-                row['Hora de la Cita'] || '',
-                row['Tipo de cita'] || 'Recordatorio',
-                subject,
-                html,
-                errorMsg,
-                'micita@umit.com.co'
-              ]
-            );
-            console.log(`📝 Correo fallido guardado en correosfallidosdesistemascitas: ${row.Email}`);
-          } catch (dbError) {
-            console.error('Error guardando correo fallido en BD:', dbError.message);
-          }
-        }
-      }
-
-      // Pausa mínima entre lotes (reducida para mayor velocidad)
-      if (i + BATCH_SIZE < data.length) {
-        await new Promise(resolve => setTimeout(resolve, 50));
-      }
-    }
-
-    if (userId && username) {
-      await logActivity(parseInt(userId), username, 'ENVIO_CORREOS_CITAS', `Procesados: ${data.length}, Enviados: ${sent}, Programados: ${scheduled}, Fallidos: ${failed.length}`);
-    }
-
-    res.json({
-      success: true,
-      results: {
-        total: data.length,
-        sent,
-        scheduled,
-        failed: failed.length,
-        failedDetails: failed
-      }
-    });
-  } catch (error) {
-    console.error('Error en send-citas:', error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-// Endpoint: Enviar correos de Reprogramación
-app.post('/api/send-reprogramacion', upload.single('file'), async (req, res) => {
-  try {
-    const { userId, username } = req.body;
-    const { doSend } = req.body;
-    
-    if (!req.file) {
-      return res.status(400).json({ success: false, message: 'No se proporcionó archivo' });
-    }
-
-    const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
-    const data = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
-
-    const REQUIRED_COLUMNS = [
-      'Email', 'Nombre del Paciente', 
-      'Fecha de la Cita Original', 'Hora de la Cita Original',
-      'Fecha de la Cita Reprogramada', 'Hora de la Cita Reprogramada',
-      'Nombre del Médico/a', 'Lugar de la cita', 'Tipo de cita', 'Asunto', 'Especialidad',
-      'Motivo de reprogramación'
-    ];
-    
-    const missingColumns = REQUIRED_COLUMNS.filter(col => !data[0] || !Object.keys(data[0]).includes(col));
-    if (missingColumns.length > 0) {
-      return res.status(400).json({ success: false, message: `Faltan columnas: ${missingColumns.join(', ')}` });
-    }
-
-    let sent = 0;
-    let scheduled = 0;
-    let failed = [];
-
-    // Procesar en lotes para evitar problemas de memoria
-    const BATCH_SIZE = 50;
-    const totalRows = data.length;
-    
-    console.log(`📊 Procesando ${totalRows} filas en lotes de ${BATCH_SIZE}...`);
-
-    for (let i = 0; i < data.length; i += BATCH_SIZE) {
-      const batch = data.slice(i, i + BATCH_SIZE);
-      console.log(`📦 Procesando lote ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(totalRows / BATCH_SIZE)} (filas ${i + 1}-${Math.min(i + BATCH_SIZE, totalRows)})...`);
-
-      for (let j = 0; j < batch.length; j++) {
-        const row = batch[j];
-        const rowIndex = i + j + 2;
-        
-        try {
-          const email = String(row.Email || '').trim();
-          if (!isValidEmail(email)) throw new Error('Email inválido o vacío');
-
-          const html = renderReprogramacionTemplate(row);
-          const fechaFormateada = formatDateForSubject(row['Fecha de la Cita Reprogramada']);
-          const subject = `${row['Asunto'] || 'Reprogramación de Cita'} - ${row['Especialidad'] || ''} - ${fechaFormateada} - ${row['Hora de la Cita Reprogramada'] || ''}`;
-
-          const fechaProgramada = row['Fecha Programada'];
-          const horaProgramada = row['Hora Programada'];
-          const scheduledDatetime = parseDatetime(fechaProgramada, horaProgramada);
-
-          if (doSend === 'true') {
-            if (scheduledDatetime) {
-              if (await scheduleEmail(parseInt(userId), email, row['Nombre del Paciente'], row['Fecha de la Cita Reprogramada'], subject, html, scheduledDatetime)) {
-                scheduled++;
-                await logEmail(parseInt(userId), email, row['Nombre del Paciente'], row['Fecha de la Cita Reprogramada'], subject, 'PROGRAMADO');
-              } else {
-                throw new Error('No se pudo programar el email');
-              }
-            } else {
-              await sendHtmlEmail(email, subject, html);
-              sent++;
-              
-              // Log de forma asíncrona para no ralentizar
-              logEmail(parseInt(userId), email, row['Nombre del Paciente'], row['Fecha de la Cita Reprogramada'], subject, 'ENVIADO').catch(err => console.error('Error en log:', err));
-              
-              // Pausa reducida de 200ms entre correos
-              if (j < batch.length - 1 || i + BATCH_SIZE < data.length) {
-                await new Promise(resolve => setTimeout(resolve, 200));
-              }
-            }
-          } else {
-            await logEmail(parseInt(userId), email, row['Nombre del Paciente'], row['Fecha de la Cita Reprogramada'], subject, 'PREVIEW_GENERADO');
-            sent++;
-          }
-        } catch (error) {
-          const errorMsg = error.message.includes('demasiado grande') || error.message.includes('tamaño') 
-            ? `Fila ${rowIndex}: ${error.message}` 
-            : `Fila ${rowIndex}: ${error.message}`;
-          failed.push({ row: rowIndex, error: errorMsg });
-          console.error(`❌ Error en fila ${rowIndex}: ${error.message}`);
-          await logEmail(parseInt(userId), row.Email || '', row['Nombre del Paciente'] || '', row['Fecha de la Cita Reprogramada'] || '', row['Asunto'] || '', 'ERROR', errorMsg);
-          
-          // ✅ GUARDAR EN TABLA correosfallidosdesistemascitas (Reprogramación)
-          try {
-            const html = renderReprogramacionTemplate(row);
-            const subject = `${row['Asunto'] || 'Reprogramación de Cita'} - ${row['Especialidad'] || ''}`;
-            await pool.execute(
-              `INSERT INTO correosfallidosdesistemascitas 
-               (user_id, recipient_email, patient_name, appointment_date, appointment_time, tipo_cita, subject, html_content, error_message, from_email) 
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-              [
-                parseInt(userId),
-                String(row.Email || '').trim(),
-                row['Nombre del Paciente'] || '',
-                row['Fecha de la Cita Reprogramada'] || '',
-                row['Hora de la Cita Reprogramada'] || '',
-                'Reprogramación',
-                subject,
-                html,
-                errorMsg,
-                'micita@umit.com.co'
-              ]
-            );
-            console.log(`📝 Correo fallido (reprogramación) guardado en correosfallidosdesistemascitas: ${row.Email}`);
-          } catch (dbError) {
-            console.error('Error guardando correo fallido en BD:', dbError.message);
-          }
-        }
-      }
-
-      if (i + BATCH_SIZE < data.length) {
-        await new Promise(resolve => setTimeout(resolve, 50));
-      }
-    }
-
-    if (userId && username) {
-      await logActivity(parseInt(userId), username, 'ENVIO_CORREOS_REPROGRAMACION', `Procesados: ${data.length}, Enviados: ${sent}, Programados: ${scheduled}, Fallidos: ${failed.length}`);
-    }
-
-    res.json({
-      success: true,
-      results: {
-        total: data.length,
-        sent,
-        scheduled,
-        failed: failed.length,
-        failedDetails: failed
-      }
-    });
-  } catch (error) {
-    console.error('Error en send-reprogramacion:', error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-// Endpoint: Enviar correos de Dengue
-app.post('/api/send-dengue', upload.single('file'), async (req, res) => {
-  try {
-    const { userId, username } = req.body;
-    const { doSend } = req.body;
-    
-    if (!req.file) {
-      return res.status(400).json({ success: false, message: 'No se proporcionó archivo' });
-    }
-
-    const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
-    const data = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
-
-    const REQUIRED_COLUMNS = ['Email'];
-    const missingColumns = REQUIRED_COLUMNS.filter(col => !data[0] || !Object.keys(data[0]).includes(col));
-    if (missingColumns.length > 0) {
-      return res.status(400).json({ success: false, message: `Faltan columnas: ${missingColumns.join(', ')}` });
-    }
-
-    let sent = 0;
-    let scheduled = 0;
-    let failed = [];
-    const html = renderDengueTemplate();
-    const subject = 'Información sobre Dengue - UMIT';
-
-    // Procesar en lotes para evitar problemas de memoria
-    const BATCH_SIZE = 50;
-    const totalRows = data.length;
-    
-    console.log(`📊 Procesando ${totalRows} filas en lotes de ${BATCH_SIZE}...`);
-
-    for (let i = 0; i < data.length; i += BATCH_SIZE) {
-      const batch = data.slice(i, i + BATCH_SIZE);
-      console.log(`📦 Procesando lote ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(totalRows / BATCH_SIZE)} (filas ${i + 1}-${Math.min(i + BATCH_SIZE, totalRows)})...`);
-
-      for (let j = 0; j < batch.length; j++) {
-        const row = batch[j];
-        const rowIndex = i + j + 2;
-        
-        try {
-          const email = String(row.Email || '').trim();
-          if (!isValidEmail(email)) throw new Error('Email inválido o vacío');
-
-          const fechaProgramada = row['Fecha Programada'];
-          const horaProgramada = row['Hora Programada'];
-          const scheduledDatetime = parseDatetime(fechaProgramada, horaProgramada);
-
-          if (doSend === 'true') {
-            if (scheduledDatetime) {
-              if (await scheduleEmail(parseInt(userId), email, 'Destinatario Dengue', '', subject, html, scheduledDatetime)) {
-                scheduled++;
-                await logEmail(parseInt(userId), email, 'Destinatario Dengue', '', subject, 'PROGRAMADO');
-              } else {
-                throw new Error('No se pudo programar el email');
-              }
-            } else {
-              await sendHtmlEmail(email, subject, html);
-              sent++;
-              
-              // Log de forma asíncrona para no ralentizar
-              logEmail(parseInt(userId), email, 'Destinatario Dengue', '', subject, 'ENVIADO').catch(err => console.error('Error en log:', err));
-              
-              // Pausa reducida de 200ms entre correos
-              if (j < batch.length - 1 || i + BATCH_SIZE < data.length) {
-                await new Promise(resolve => setTimeout(resolve, 200));
-              }
-            }
-          } else {
-            await logEmail(parseInt(userId), email, 'Destinatario Dengue', '', subject, 'PREVIEW_GENERADO');
-            sent++;
-          }
-        } catch (error) {
-          const errorMsg = error.message.includes('demasiado grande') || error.message.includes('tamaño') 
-            ? `Fila ${rowIndex}: ${error.message}` 
-            : `Fila ${rowIndex}: ${error.message}`;
-          failed.push({ row: rowIndex, error: errorMsg });
-          console.error(`❌ Error en fila ${rowIndex}: ${error.message}`);
-          await logEmail(parseInt(userId), row.Email || '', 'Destinatario Dengue', '', subject, 'ERROR', errorMsg);
-          
-          // ✅ GUARDAR EN TABLA correosfallidosdengue_calidad
-          try {
-            await pool.execute(
-              `INSERT INTO correosfallidosdengue_calidad 
-               (user_id, recipient_email, tipo_plantilla, subject, html_content, error_message, from_email) 
-               VALUES (?, ?, ?, ?, ?, ?, ?)`,
-              [
-                parseInt(userId),
-                String(row.Email || '').trim(),
-                'Dengue',
-                subject,
-                html,
-                errorMsg,
-                'calidad@umit.com.co'
-              ]
-            );
-            console.log(`📝 Correo fallido (dengue) guardado en correosfallidosdengue_calidad: ${row.Email}`);
-          } catch (dbError) {
-            console.error('Error guardando correo fallido en BD:', dbError.message);
-          }
-        }
-      }
-
-      if (i + BATCH_SIZE < data.length) {
-        await new Promise(resolve => setTimeout(resolve, 50));
-      }
-    }
-
-    if (userId && username) {
-      await logActivity(parseInt(userId), username, 'ENVIO_CORREOS_DENGUE', `Procesados: ${data.length}, Enviados: ${sent}, Programados: ${scheduled}, Fallidos: ${failed.length}`);
-    }
-
-    res.json({
-      success: true,
-      results: {
-        total: data.length,
-        sent,
-        scheduled,
-        failed: failed.length,
-        failedDetails: failed
-      }
-    });
-  } catch (error) {
-    console.error('Error en send-dengue:', error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
 // ==================== ENDPOINTS DE PLANTILLAS ====================
 // Listar plantillas por área
 app.get('/api/templates', async (req, res) => {
@@ -1278,20 +847,19 @@ app.post('/api/templates', async (req, res) => {
 app.put('/api/templates/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { userId, nombre, descripcion, htmlContent, variables, area_id, isActive } = req.body;
+    const { userId, nombre, descripcion, contenido } = req.body;
 
     if (!userId) {
-      return res.status(400).json({ success: false, message: 'userId es requerido' });
+      return res.status(400).json({
+        success: false,
+        message: 'userId es requerido'
+      });
     }
 
     const [existing] = await pool.execute(
       'SELECT id FROM plantillas WHERE id = ? AND user_id = ?',
       [id, userId]
     );
-
-    if (existing.length === 0) {
-      return res.status(404).json({ success: false, message: 'Plantilla no encontrada' });
-    }
 
     const updateFields = [];
     const updateValues = [];
@@ -1300,47 +868,54 @@ app.put('/api/templates/:id', async (req, res) => {
       updateFields.push('nom_plantilla = ?');
       updateValues.push(nombre);
     }
+
     if (descripcion !== undefined) {
       updateFields.push('descripcion = ?');
       updateValues.push(descripcion);
     }
-    if (htmlContent !== undefined) {
+
+    if (contenido !== undefined) {
       updateFields.push('html_content = ?');
-      updateValues.push(htmlContent);
-    }
-    if (variables !== undefined) {
-      updateFields.push('variables = ?');
-      updateValues.push(JSON.stringify(variables));
-    }
-    if (area_id !== undefined) {
-      updateFields.push('area_id = ?');
-      updateValues.push(area_id);
-    }
-    if (isActive !== undefined) {
-      updateFields.push('estado = ?');
-      updateValues.push(isActive ? 'ACTIVO' : 'INACTIVO');
+      updateValues.push(contenido);
     }
 
     if (updateFields.length === 0) {
-      return res.status(400).json({ success: false, message: 'No hay campos para actualizar' });
+      return res.status(400).json({
+        success: false,
+        message: 'No hay campos para actualizar'
+      });
     }
 
     updateValues.push(id, userId);
 
     await pool.execute(
-      `UPDATE plantillas SET ${updateFields.join(', ')} WHERE id = ? AND user_id = ?`,
+      `UPDATE plantillas 
+       SET ${updateFields.join(', ')} 
+       WHERE id = ? AND user_id = ?`,
       updateValues
     );
 
-    await logActivity(parseInt(userId), 'Usuario', 'ACTUALIZAR_PLANTILLA', `Plantilla actualizada: ${id}`);
+    await logActivity(
+      parseInt(userId),
+      'Usuario',
+      'ACTUALIZAR_PLANTILLA',
+      `Plantilla actualizada: ${id}`
+    );
 
-    res.json({ success: true, message: 'Plantilla actualizada exitosamente' });
+    res.json({
+      success: true,
+      message: 'Plantilla actualizada exitosamente'
+    });
 
   } catch (error) {
     console.error('Error actualizando plantilla:', error);
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Error interno al actualizar la plantilla'
+    });
   }
 });
+
 
 // Eliminar plantilla
 app.delete('/api/templates/:id', async (req, res) => {

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 28-01-2026 a las 22:01:50
+-- Tiempo de generación: 04-02-2026 a las 17:38:44
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -65,7 +65,13 @@ INSERT INTO `activity_logs` (`id`, `user_id`, `username`, `action`, `description
 (159, 4, 'Dani123', 'ENVIO_CORREOS_CITAS', 'Procesados: 2, Enviados: 2, Programados: 0, Fallidos: 0', '', '2025-12-16 20:36:46'),
 (160, 4, 'Dani123', 'ENVIO_CORREOS_DENGUE', 'Procesados: 2, Enviados: 0, Programados: 0, Fallidos: 2', '', '2025-12-16 20:41:10'),
 (161, 4, 'Dani123', 'ENVIO_CORREOS_DENGUE', 'Procesados: 2, Enviados: 2, Programados: 0, Fallidos: 0', '', '2025-12-16 20:42:30'),
-(162, 4, 'Dani123', 'ENVIO_CORREOS_DENGUE', 'Procesados: 2, Enviados: 2, Programados: 0, Fallidos: 0', '', '2025-12-16 20:42:49');
+(162, 4, 'Dani123', 'ENVIO_CORREOS_DENGUE', 'Procesados: 2, Enviados: 2, Programados: 0, Fallidos: 0', '', '2025-12-16 20:42:49'),
+(163, 6, 'Usuario', 'CREAR_PLANTILLA', 'Plantilla creada: prueba1', '', '2026-01-30 01:54:12'),
+(164, 6, 'Usuario', 'CREAR_PLANTILLA', 'Plantilla creada: prueba2', '', '2026-01-30 02:51:20'),
+(165, 6, 'Usuario', 'CREAR_PLANTILLA', 'Plantilla creada: prueba1', '', '2026-01-30 16:47:12'),
+(166, 6, 'Usuario', 'CREAR_PLANTILLA', 'Plantilla creada: prueba2', '', '2026-01-30 16:52:32'),
+(167, 6, 'Usuario', 'CREAR_PLANTILLA', 'Plantilla creada: plantilla 1', '', '2026-02-02 21:08:01'),
+(168, 6, 'Usuario', 'CREAR_PLANTILLA', 'Plantilla creada: prueba1', '', '2026-02-02 22:32:38');
 
 -- --------------------------------------------------------
 
@@ -76,7 +82,7 @@ INSERT INTO `activity_logs` (`id`, `user_id`, `username`, `action`, `description
 CREATE TABLE `areas` (
   `id` int(11) NOT NULL,
   `nombre` varchar(50) NOT NULL,
-  `estado` enum('ACTIVA','INACTIVA') NOT NULL
+  `estado` enum('ACTIVO','INACTIVO') NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -84,13 +90,13 @@ CREATE TABLE `areas` (
 --
 
 INSERT INTO `areas` (`id`, `nombre`, `estado`) VALUES
-(5, 'Citas', 'ACTIVA'),
-(6, 'Calidad', 'ACTIVA'),
-(7, 'Talento Humano', 'ACTIVA'),
-(8, 'Contabilidad', 'ACTIVA'),
-(9, 'Radicacion', 'ACTIVA'),
-(10, 'Sistemas', 'ACTIVA'),
-(11, 'Registros', 'ACTIVA');
+(5, 'Citas', 'ACTIVO'),
+(6, 'Calidad', 'ACTIVO'),
+(7, 'Talento Humano', 'ACTIVO'),
+(8, 'Contabilidad', 'ACTIVO'),
+(9, 'Radicacion', 'ACTIVO'),
+(10, 'Sistemas', 'ACTIVO'),
+(11, 'Registros', 'ACTIVO');
 
 -- --------------------------------------------------------
 
@@ -274,8 +280,30 @@ INSERT INTO `email_logs` (`id`, `user_id`, `recipient_email`, `patient_name`, `a
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `email_templates`
 --
- --------------------------------------------------------
+
+CREATE TABLE `email_templates` (
+  `id` int(11) NOT NULL,
+  `nombre` varchar(255) NOT NULL,
+  `descripcion` text DEFAULT NULL,
+  `html_content` longtext NOT NULL,
+  `variables` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `email_templates`
+--
+
+INSERT INTO `email_templates` (`id`, `nombre`, `descripcion`, `html_content`, `variables`, `created_at`, `updated_at`) VALUES
+(15, 'hola', 'hola', '<!DOCTYPE html>\n<html lang=\"es\">\n<head>\n    <meta charset=\"UTF-8\" />\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n    <title>Recordatorio de Cita Médica</title>\n    <style>\n        body { font-family: Arial, sans-serif; background-color: #fff; margin: 0; padding: 0; color: #000; }\n        .container { max-width: 600px; margin: 30px auto; border-radius: 8px; overflow: hidden; box-shadow: 0 0 8px rgba(0,0,0,0.1); border: 1px solid #ddd; }\n        .header { background-color: #3b5998; color: white; padding: 25px 0; text-align: center; font-weight: 700; font-size: 24px; }\n        .header-circle { width: 120px; height: 120px; margin: 0 auto 3px; background-color: white; border-radius: 50%; border: 1px solid #ddd; box-sizing: border-box; display: flex; align-items: center; justify-content: center; }\n        .header-circle img { max-width: 90%; max-height: 300%; object-fit: contain; margin-left: 8px; border-radius: 200px; }\n        .content { padding: 25px 30px; }\n        .content h2 { font-weight: 700; font-size: 20px; margin: 0 0 20px; }\n        .content p { font-size: 14px; line-height: 1.5; margin: 10px 0; }\n        .highlighted { background-color: #f3f6fb; padding: 15px 20px; margin: 20px 0; border-radius: 6px; font-size: 14px; }\n        .highlighted b { color: #2b2b2b; }\n        .footer { background-color: #2e3b55; color: #a0b5d9; font-size: 13px; padding: 20px 30px; text-align: center; }\n        .footer b { color: #fff; }\n        a, a:visited { color: #3b5998; text-decoration: none; font-weight: 600; }\n    </style>\n</head>\n<body>\n    <div class=\"container\">\n        <div class=\"header\">\n            <div class=\"header-circle\">\n                <img src=\"cid:logo\" alt=\"UMIT Logo\" />\n            </div>\n        </div>\n        <div class=\"content\">\n            <h2>hola {{Nombre}}<br>&nbsp;<br>Que edad tienes {{Edad}}<br>&nbsp;</h2>\n        </div>\n        <div class=\"footer\">\n            Atentamente,<br/>El equipo de <b>Unidad materno infantil</b>\n        </div>\n    </div>\n</body>\n</html>', '[\"Nombre\",\"Edad\"]', '2025-12-09 22:42:29', '2025-12-09 22:42:29'),
+(16, 'plantilla 1', 'descripción plantilla 1', '<!DOCTYPE html>\n<html lang=\"es\">\n<head>\n    <meta charset=\"UTF-8\" />\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n    <title>Recordatorio de Cita Médica</title>\n    <style>\n        body { font-family: Arial, sans-serif; background-color: #fff; margin: 0; padding: 0; color: #000; }\n        .container { max-width: 600px; margin: 30px auto; border-radius: 8px; overflow: hidden; box-shadow: 0 0 8px rgba(0,0,0,0.1); border: 1px solid #ddd; }\n        .header { background-color: #3b5998; color: white; padding: 25px 0; text-align: center; font-weight: 700; font-size: 24px; }\n        .header-circle { width: 120px; height: 120px; margin: 0 auto 3px; background-color: white; border-radius: 50%; border: 1px solid #ddd; box-sizing: border-box; display: flex; align-items: center; justify-content: center; }\n        .header-circle img { max-width: 90%; max-height: 300%; object-fit: contain; margin-left: 8px; border-radius: 200px; }\n        .content { padding: 25px 30px; }\n        .content h2 { font-weight: 700; font-size: 20px; margin: 0 0 20px; }\n        .content p { font-size: 14px; line-height: 1.5; margin: 10px 0; }\n        .highlighted { background-color: #f3f6fb; padding: 15px 20px; margin: 20px 0; border-radius: 6px; font-size: 14px; }\n        .highlighted b { color: #2b2b2b; }\n        .footer { background-color: #2e3b55; color: #a0b5d9; font-size: 13px; padding: 20px 30px; text-align: center; }\n        .footer b { color: #fff; }\n        a, a:visited { color: #3b5998; text-decoration: none; font-weight: 600; }\n    </style>\n</head>\n<body>\n    <div class=\"container\">\n        <div class=\"header\">\n            <div class=\"header-circle\">\n                <img src=\"cid:logo\" alt=\"UMIT Logo\" />\n            </div>\n        </div>\n        <div class=\"content\">\n            <h2>Hola {{Nombre}}<br>&nbsp;<br>&nbsp;cual es tu a<font color=\"#da1616\">pellid</font><font color=\"#1675da\">o </font>{{Apellido}}&nbsp;<br>&nbsp;<br>&nbsp;que estas haciendo {{Actividad}}&nbsp;</h2>\n        </div>\n        <div class=\"footer\">\n            Atentamente,<br/>El equipo de <b>Unidad materno infantil</b>\n        </div>\n    </div>\n</body>\n</html>', '[\"Nombre\",\"Apellido\",\"Actividad\"]', '2025-12-10 19:33:28', '2025-12-10 19:33:28'),
+(18, 'plantilla ejemplo', 'ejemplo', '<!DOCTYPE html>\n<html lang=\"es\">\n<head>\n    <meta charset=\"UTF-8\" />\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n    <title>Recordatorio de Cita Médica</title>\n    <style>\n        body { font-family: Arial, sans-serif; background-color: #fff; margin: 0; padding: 0; color: #000; }\n        .container { max-width: 600px; margin: 30px auto; border-radius: 8px; overflow: hidden; box-shadow: 0 0 8px rgba(0,0,0,0.1); border: 1px solid #ddd; }\n        .header { background-color: #3b5998; color: white; padding: 25px 0; text-align: center; font-weight: 700; font-size: 24px; }\n        .header-circle { width: 120px; height: 120px; margin: 0 auto 3px; background-color: white; border-radius: 50%; border: 1px solid #ddd; box-sizing: border-box; display: flex; align-items: center; justify-content: center; }\n        .header-circle img { max-width: 90%; max-height: 300%; object-fit: contain; margin-left: 8px; border-radius: 200px; }\n        .content { padding: 25px 30px; }\n        .content h2 { font-weight: 700; font-size: 20px; margin: 0 0 20px; }\n        .content p { font-size: 14px; line-height: 1.5; margin: 10px 0; }\n        .highlighted { background-color: #f3f6fb; padding: 15px 20px; margin: 20px 0; border-radius: 6px; font-size: 14px; }\n        .highlighted b { color: #2b2b2b; }\n        .footer { background-color: #2e3b55; color: #a0b5d9; font-size: 13px; padding: 20px 30px; text-align: center; }\n        .footer b { color: #fff; }\n        a, a:visited { color: #3b5998; text-decoration: none; font-weight: 600; }\n    </style>\n</head>\n<body>\n    <div class=\"container\">\n        <div class=\"header\">\n            <div class=\"header-circle\">\n                <img src=\"cid:logo\" alt=\"UMIT Logo\" />\n            </div>\n        </div>\n        <div class=\"content\">\n            <h2><span style=\"font-weight: normal;\">Hola esto es un <font color=\"#f10e0e\">ejempl</font>o&nbsp;</span><br>&nbsp;<br>&nbsp;como estas {{Estadoanimico}}<br>&nbsp;<br>&nbsp;que edad tienes {{Edad}}</h2>\n        </div>\n        <div class=\"footer\">\n            Atentamente,<br/>El equipo de <b>Unidad materno infantil</b>\n        </div>\n    </div>\n</body>\n</html>', '[\"Estadoanimico\",\"Edad\"]', '2025-12-16 18:01:39', '2025-12-16 18:01:39'),
+(19, 'Plantilla  ingeniera', 'prueba de plantilla', '<!DOCTYPE html>\n<html lang=\"es\">\n<head>\n    <meta charset=\"UTF-8\" />\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n    <title>Recordatorio de Cita Médica</title>\n    <style>\n        body { font-family: Arial, sans-serif; background-color: #fff; margin: 0; padding: 0; color: #000; }\n        .container { max-width: 600px; margin: 30px auto; border-radius: 8px; overflow: hidden; box-shadow: 0 0 8px rgba(0,0,0,0.1); border: 1px solid #ddd; }\n        .header { background-color: #3b5998; color: white; padding: 25px 0; text-align: center; font-weight: 700; font-size: 24px; }\n        .header-circle { width: 120px; height: 120px; margin: 0 auto 3px; background-color: white; border-radius: 50%; border: 1px solid #ddd; box-sizing: border-box; display: flex; align-items: center; justify-content: center; }\n        .header-circle img { max-width: 90%; max-height: 300%; object-fit: contain; margin-left: 8px; border-radius: 200px; }\n        .content { padding: 25px 30px; }\n        .content h2 { font-weight: 700; font-size: 20px; margin: 0 0 20px; }\n        .content p { font-size: 14px; line-height: 1.5; margin: 10px 0; }\n        .highlighted { background-color: #f3f6fb; padding: 15px 20px; margin: 20px 0; border-radius: 6px; font-size: 14px; }\n        .highlighted b { color: #2b2b2b; }\n        .footer { background-color: #2e3b55; color: #a0b5d9; font-size: 13px; padding: 20px 30px; text-align: center; }\n        .footer b { color: #fff; }\n        a, a:visited { color: #3b5998; text-decoration: none; font-weight: 600; }\n    </style>\n</head>\n<body>\n    <div class=\"container\">\n        <div class=\"header\">\n            <div class=\"header-circle\">\n                <img src=\"cid:logo\" alt=\"UMIT Logo\" />\n            </div>\n        </div>\n        <div class=\"content\">\n            <h2><span style=\"font-weight: normal;\">Hola {{nombre}} como <font color=\"#e40c0c\">estas <u>{{Estadoanimico}}<br></u>&nbsp;</font></span></h2>\n        </div>\n        <div class=\"footer\">\n            Atentamente,<br/>El equipo de <b>Unidad materno infantil</b>\n        </div>\n    </div>\n</body>\n</html>', '[\"nombre\",\"Estadoanimico\"]', '2025-12-16 19:38:41', '2025-12-16 19:38:41');
+
+-- --------------------------------------------------------
 
 --
 -- Estructura de tabla para la tabla `plantillas`
@@ -288,11 +316,23 @@ CREATE TABLE `plantillas` (
   `descripcion` varchar(100) NOT NULL,
   `html_content` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `variables` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `area_is` int(11) NOT NULL,
+  `area_id` int(11) NOT NULL,
   `estado` enum('ACTIVO','INACTIVO') NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `update_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `plantillas`
+--
+
+INSERT INTO `plantillas` (`id`, `user_id`, `nom_plantilla`, `descripcion`, `html_content`, `variables`, `area_id`, `estado`, `created_at`, `update_at`) VALUES
+(1, 6, 'prueba1', 'prueba1', '{{ Nombre }}', '[\" Nombre \"]', 5, 'ACTIVO', '2026-01-30 01:54:12', '2026-01-30 01:54:12'),
+(2, 6, 'prueba2', 'asd', 'hola {{ nombre }} este es un mensaje de prueba enviado el {{ fecha }}', '[\" nombre \",\" fecha \"]', 10, 'ACTIVO', '2026-01-30 02:51:20', '2026-01-30 02:51:20'),
+(3, 6, 'prueba1', 'ppp', 'Hola {{nombre}} {{ mensaje }}', '[\" mensaje \"]', 6, 'ACTIVO', '2026-01-30 16:47:12', '2026-01-30 16:47:12'),
+(4, 6, 'prueba2', '´poiuy', 'les informo que {{ mensaje }}', '[\" mensaje \"]', 6, 'ACTIVO', '2026-01-30 16:52:32', '2026-01-30 16:52:32'),
+(5, 6, 'plantilla 1', 'Descripcion', 'Hola {{ nombre }} este es un mensaje de prueba hecho el {{ fecha }}', '[\" nombre \",\" fecha \"]', 5, 'ACTIVO', '2026-02-02 21:08:01', '2026-02-02 21:08:01'),
+(6, 6, 'prueba1', 'prueba', 'hola {{ nombre }} este es un mensaje de prueba hecho el {{ fecha}}', '[\" nombre \",\" fecha\"]', 6, 'ACTIVO', '2026-02-02 22:32:38', '2026-02-02 22:32:38');
 
 -- --------------------------------------------------------
 
@@ -426,12 +466,17 @@ ALTER TABLE `email_logs`
   ADD KEY `idx_status` (`status`);
 
 --
+-- Indices de la tabla `email_templates`
+--
+ALTER TABLE `email_templates`
+  ADD PRIMARY KEY (`id`);
+
 --
 -- Indices de la tabla `plantillas`
 --
 ALTER TABLE `plantillas`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `plantilla_area` (`area_is`),
+  ADD KEY `plantilla_area` (`area_id`),
   ADD KEY `plantilla_usuario` (`user_id`);
 
 --
@@ -460,7 +505,7 @@ ALTER TABLE `usuarios`
 -- AUTO_INCREMENT de la tabla `activity_logs`
 --
 ALTER TABLE `activity_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=163;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=169;
 
 --
 -- AUTO_INCREMENT de la tabla `areas`
@@ -508,7 +553,7 @@ ALTER TABLE `email_logs`
 -- AUTO_INCREMENT de la tabla `plantillas`
 --
 ALTER TABLE `plantillas`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT de la tabla `scheduled_emails`
@@ -568,7 +613,7 @@ ALTER TABLE `email_logs`
 -- Filtros para la tabla `plantillas`
 --
 ALTER TABLE `plantillas`
-  ADD CONSTRAINT `plantilla_area` FOREIGN KEY (`area_is`) REFERENCES `areas` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `plantilla_area` FOREIGN KEY (`area_id`) REFERENCES `areas` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `plantilla_usuario` FOREIGN KEY (`user_id`) REFERENCES `usuarios` (`documento`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --

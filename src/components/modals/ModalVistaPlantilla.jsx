@@ -11,7 +11,6 @@ export default function ModalVistaPlantilla({
       <div className="modal-container">
         <header className="modal-header">
           <h2>{plantilla.nom_plantilla}</h2>
-          <button className="modal-close" onClick={onClose}>✖</button>
         </header>
 
         <p className="modal-description">
