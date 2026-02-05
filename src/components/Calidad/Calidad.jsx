@@ -4,6 +4,15 @@ import "./Calidad.css";
 import ModalVistaPlantilla from "../modals/ModalVistaPlantilla";
 import ModalEditarPlantilla from "../modals/ModalEditarPlantilla";
 
+const getUserId = () => {
+  try {
+    const user = JSON.parse(localStorage.getItem("usuarioLogueado"));
+    return user?.documento || null;
+  } catch {
+    return null;
+  }
+};
+
 const extraerVariables = (html) => {
   const regex = /{{(.*?)}}/g;
   const matches = [...html.matchAll(regex)];
@@ -103,16 +112,46 @@ console.log("Contenido render:",plantillaSeleccionada?.contenido);
           <ModalEditarPlantilla
             plantilla={plantillaEditando}
             onClose={() => setPlantillaEditando(null)}
-            onSave={(plantillaActualizada) => {
-              console.log("Guardar plantilla:", plantillaActualizada);
+            onSave={async (plantillaActualizada) => {
+              try {
+                const userId = getUserId();
 
-              // actualizar en pantalla
-              setPlantillaSeleccionada(plantillaActualizada);
+                if (!userId) {
+                  alert("No se pudo identificar el usuario");
+                  return;
+                }
 
-              // cerrar modal
-              setPlantillaEditando(null);
+                const payload = {
+                  userId,
+                  descripcion: plantillaActualizada.descripcion,
+                  htmlContent: plantillaActualizada.contenido
+                };
 
-              // 🔜 aquí luego conectamos API
+                await axios.put(
+                  `/api/templates/${plantillaActualizada.id}`,
+                  payload
+                );
+
+                // 🔄 actualizar lista en memoria
+                setPlantillas(prev =>
+                  prev.map(p =>
+                    p.id === plantillaActualizada.id
+                      ? {
+                          ...p,
+                          descripcion: plantillaActualizada.descripcion,
+                          html_content: plantillaActualizada.contenido
+                        }
+                      : p
+                  )
+                );
+
+                // cerrar modal
+                setPlantillaEditando(null);
+
+              } catch (error) {
+                console.error("Error guardando plantilla:", error);
+                alert("No se pudo guardar la plantilla");
+              }
             }}
           />
         )}
