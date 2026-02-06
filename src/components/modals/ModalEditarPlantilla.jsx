@@ -38,11 +38,11 @@ export default function ModalEditarPlantilla({
         
 
         <footer className="editar-actions">
-          <button className="editar-save" onClick={handleGuardar}>
+          <button className="editar-button" onClick={handleGuardar}>
             💾 Guardar
           </button>
 
-          <button className="editar-cancel" onClick={onClose}>
+          <button className="editar-button" onClick={onClose}>
             ❌ Cancelar
           </button>
         </footer>
