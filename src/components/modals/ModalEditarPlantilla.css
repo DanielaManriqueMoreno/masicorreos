@@ -31,6 +31,7 @@
   display: block;
   margin-bottom: 6px;
   font-weight: 600;
+  color: rgba(7, 38, 82, 0.948);
 }
 
 .editar-body textarea {

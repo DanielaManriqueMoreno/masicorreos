@@ -35,19 +35,7 @@ export default function ModalEditarPlantilla({
           <label>Contenido de la plantilla</label>
           <textarea value={contenido}  onChange={e => setContenido(e.target.value)} rows={8} />
         </div>
-        <div className="editar-variables">
-          <h4>Variables detectadas</h4>
-
-          {extraerVariables(contenido).length === 0 ? (
-            <p>No hay variables en el contenido</p>
-          ) : (
-            <ul>
-              {extraerVariables(contenido).map((v, i) => (
-                <li key={i}>{`{{${v}}}`}</li>
-              ))}
-            </ul>
-          )}
-        </div>
+        
 
         <footer className="editar-actions">
           <button className="editar-save" onClick={handleGuardar}>
