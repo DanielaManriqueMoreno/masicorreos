@@ -441,10 +441,9 @@ app.get('/api/areas', async (req, res) => {
   }
 });
 
-
 // ==================== ENDPOINTS DE RECUPERACIÓN DE CONTRASEÑA ====================
 
-// Endpoint: Solicitar recuperación de contraseña
+// Solicitar recuperación de contraseña
 app.post('/api/forgot-password', async (req, res) => {
   try {
     const { usuario } = req.body;
@@ -519,7 +518,7 @@ app.post('/api/forgot-password', async (req, res) => {
   }
 });
 
-// Endpoint: Resetear contraseña con código
+ // Resetear contraseña con código
 app.post('/api/reset-password', async (req, res) => {
   try {
     const { token, newPassword } = req.body;
@@ -916,7 +915,6 @@ app.put('/api/templates/:id', async (req, res) => {
   }
 });
 
-
 // Eliminar plantilla
 app.delete('/api/templates/:id', async (req, res) => {
   try {
@@ -950,6 +948,79 @@ app.delete('/api/templates/:id', async (req, res) => {
   } catch (error) {
     console.error('Error eliminando plantilla:', error);
     res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Descargar plantilla 
+app.get('/api/templates/:id/download-excel', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const [templates] = await pool.execute(
+      'SELECT * FROM plantillas WHERE id = ? AND estado = ?',
+      [id, 'ACTIVO']
+    );
+
+    if (templates.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Plantilla no encontrada o inactiva'
+      });
+    }
+
+    const template = templates[0];
+    let variables = [];
+
+    if (template.variables) {
+      try {
+        variables = JSON.parse(template.variables)
+          .map(v => v.trim())
+          .filter(Boolean);
+      } catch (e) {
+        console.error("Error parseando variables:", template.variables);
+      }
+    }
+
+    const columns = [
+      'Email',
+      ...variables,
+      'Asunto',
+      'Fecha Programada',
+      'Hora Programada'
+    ];
+    
+    const exampleRow = {};
+    columns.forEach(col => exampleRow[col] = '');
+
+    const worksheet = XLSX.utils.json_to_sheet([exampleRow], {
+      header: columns
+    });
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Plantilla');
+
+    const buffer = XLSX.write(workbook, {
+      type: 'buffer',
+      bookType: 'xlsx'
+    });
+
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename=plantilla_${template.nom_plantilla}.xlsx`
+    );
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+
+    res.send(buffer);
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'Error generando el archivo Excel'
+    });
   }
 });
 
@@ -1398,145 +1469,6 @@ app.post('/api/send-custom-template', upload.single('file'), async (req, res) =>
   }
 });
 
-// Endpoint: Enviar correos de Cursos
-app.post('/api/send-cursos', upload.single('file'), async (req, res) => {
-  try {
-    const { userId, username } = req.body;
-    const { doSend } = req.body;
-    
-    if (!req.file) {
-      return res.status(400).json({ success: false, message: 'No se proporcionó archivo' });
-    }
-
-    const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
-    const data = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
-
-    const REQUIRED_COLUMNS = [
-      'Email', 'NOMBRE', 'FECHA_LIMITE', 'DIRIGIDO_A', 'Asunto',
-      'CURSO_1', 'ESTADO_1', 'FECHA_1',
-      'CURSO_2', 'ESTADO_2', 'FECHA_2',
-      'CURSO_3', 'ESTADO_3', 'FECHA_3',
-      'CURSO_4', 'ESTADO_4', 'FECHA_4',
-      'ENLACE_SUBIDA_CERTIFICADOS'
-    ];
-    
-    const missingColumns = REQUIRED_COLUMNS.filter(col => !data[0] || !Object.keys(data[0]).includes(col));
-    if (missingColumns.length > 0) {
-      return res.status(400).json({ success: false, message: `Faltan columnas: ${missingColumns.join(', ')}` });
-    }
-
-    let sent = 0;
-    let scheduled = 0;
-    let failed = [];
-
-    // Procesar en lotes para evitar problemas de memoria
-    const BATCH_SIZE = 50;
-    const totalRows = data.length;
-    
-    console.log(`📊 Procesando ${totalRows} filas en lotes de ${BATCH_SIZE}...`);
-
-    for (let i = 0; i < data.length; i += BATCH_SIZE) {
-      const batch = data.slice(i, i + BATCH_SIZE);
-      console.log(`📦 Procesando lote ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(totalRows / BATCH_SIZE)} (filas ${i + 1}-${Math.min(i + BATCH_SIZE, totalRows)})...`);
-
-      for (let j = 0; j < batch.length; j++) {
-        const row = batch[j];
-        const rowIndex = i + j + 2;
-        
-        try {
-          const email = String(row.Email || '').trim();
-          if (!isValidEmail(email)) throw new Error('Email inválido o vacío');
-
-          const html = renderCursosTemplate(row);
-          const subject = String(row['Asunto'] || 'Recordatorio de Cursos Obligatorios');
-
-          const fechaProgramada = row['Fecha Programada'];
-          const horaProgramada = row['Hora Programada'];
-          const scheduledDatetime = parseDatetime(fechaProgramada, horaProgramada);
-
-          if (doSend === 'true') {
-            if (scheduledDatetime) {
-              if (await scheduleEmail(parseInt(userId), email, row['NOMBRE'], row['FECHA_LIMITE'], subject, html, scheduledDatetime)) {
-                scheduled++;
-                await logEmail(parseInt(userId), email, row['NOMBRE'], row['FECHA_LIMITE'], subject, 'PROGRAMADO');
-              } else {
-                throw new Error('No se pudo programar el email');
-              }
-            } else {
-              await sendHtmlEmail(email, subject, html);
-              sent++;
-              
-              // Log de forma asíncrona para no ralentizar
-              logEmail(parseInt(userId), email, row['NOMBRE'], row['FECHA_LIMITE'], subject, 'ENVIADO').catch(err => console.error('Error en log:', err));
-              
-              // Pausa reducida de 200ms entre correos
-              if (j < batch.length - 1 || i + BATCH_SIZE < data.length) {
-                await new Promise(resolve => setTimeout(resolve, 200));
-              }
-            }
-          } else {
-            await logEmail(parseInt(userId), email, row['NOMBRE'], row['FECHA_LIMITE'], subject, 'PREVIEW_GENERADO');
-            sent++;
-          }
-        } catch (error) {
-          const errorMsg = error.message.includes('demasiado grande') || error.message.includes('tamaño') 
-            ? `Fila ${rowIndex}: ${error.message}` 
-            : `Fila ${rowIndex}: ${error.message}`;
-          failed.push({ row: rowIndex, error: errorMsg });
-          console.error(`❌ Error en fila ${rowIndex}: ${error.message}`);
-          await logEmail(parseInt(userId), row.Email || '', row['NOMBRE'] || '', row['FECHA_LIMITE'] || '', row['Asunto'] || '', 'ERROR', errorMsg);
-          
-          // ✅ GUARDAR EN TABLA correosfallidosdecursosobligatorios
-          try {
-            const html = renderCursosTemplate(row);
-            await pool.execute(
-              `INSERT INTO correosfallidosdecursosobligatorios 
-               (user_id, recipient_email, nombre_empleado, nombre_curso, fecha_vencimiento, subject, html_content, error_message, from_email) 
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-              [
-                parseInt(userId),
-                String(row.Email || '').trim(),
-                row['NOMBRE'] || '',
-                row['CURSO_1'] || '',
-                row['FECHA_LIMITE'] || '',
-                subject,
-                html,
-                errorMsg,
-                'talentohumano@umit.com.co'
-              ]
-            );
-            console.log(`📝 Correo fallido (cursos) guardado en correosfallidosdecursosobligatorios: ${row.Email}`);
-          } catch (dbError) {
-            console.error('Error guardando correo fallido en BD:', dbError.message);
-          }
-        }
-      }
-
-      if (i + BATCH_SIZE < data.length) {
-        await new Promise(resolve => setTimeout(resolve, 50));
-      }
-    }
-
-    if (userId && username) {
-      await logActivity(parseInt(userId), username, 'ENVIO_CORREOS_CURSOS', `Procesados: ${data.length}, Enviados: ${sent}, Programados: ${scheduled}, Fallidos: ${failed.length}`);
-    }
-
-    res.json({
-      success: true,
-      results: {
-        total: data.length,
-        sent,
-        scheduled,
-        failed: failed.length,
-        failedDetails: failed
-      }
-    });
-  } catch (error) {
-    console.error('Error en send-cursos:', error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
 // ============================================
 // RUTAS PARA VER REGISTROS
 // ============================================
@@ -1862,7 +1794,7 @@ app.put('/api/correos-programados/:id', async (req, res) => {
   }
 });
 
-// Middleware para manejar rutas API no encontradas (debe ir al final, después de todas las rutas)
+// Middleware para manejar rutas API no encontradas 
 app.use('/api/*', (req, res) => {
   res.status(404).json({ 
     success: false, 

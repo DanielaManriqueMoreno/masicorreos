@@ -6,6 +6,7 @@ import umitLogo from "./assets/umit-logo.png";
 import Interfaz1 from "./Interfaz1";
 import RecuperarPassword from "./components/RecuperarPassword/RecuperarPassword";
 import { iniciarSesion, verificarSesion } from "./api";
+import { useUsuario } from "./context/UserContext.jsx";
 
 const AREAS_ID_A_SLUG = {
   5: "citas",
@@ -27,6 +28,8 @@ function App() {
   const [usuarioLogueado, setUsuarioLogueado] = useState(null);
   const [cargando, setCargando] = useState(false);
   const [mostrarRecuperarPassword, setMostrarRecuperarPassword] = useState(false);
+
+  const { setUsuario } = useUsuario();
 
   // Restaurar sesión al cargar la aplicación
   useEffect(() => {
@@ -60,6 +63,7 @@ function App() {
         };
 
         setUsuarioLogueado(usuarioActualizado);
+        setUsuario(usuarioActualizado); 
         localStorage.setItem(
           "usuarioLogueado",
           JSON.stringify(usuarioActualizado)
@@ -70,6 +74,7 @@ function App() {
         console.warn("Error verificando sesión:", err);
         // NO cerrar sesión
         setUsuarioLogueado(usuario);
+        setUsuario(usuario);
         setPantalla("interfaz1");
       });
 
@@ -116,6 +121,7 @@ function App() {
       };
 
       setUsuarioLogueado(usuarioNormalizado);
+      setUsuario(usuarioNormalizado);
       setPantalla("interfaz1");
 
       localStorage.setItem(
@@ -137,6 +143,7 @@ function App() {
 
   const handleLogout = () => {
     setUsuarioLogueado(null);
+    setUsuario(null);
     setPantalla("login");
     setError("");
 
@@ -146,8 +153,7 @@ function App() {
 
   if (mostrarRecuperarPassword) {
     return (
-      <RecuperarPassword
-        onCerrar={() => {
+      <RecuperarPassword onCerrar={() => {
           setMostrarRecuperarPassword(false);
           setError("");
         }}
@@ -157,10 +163,7 @@ function App() {
 
   if (pantalla === "interfaz1") {
     return (
-      <Interfaz1
-        usuario={usuarioLogueado}
-        onLogout={handleLogout}
-      />
+      <Interfaz1 usuario={usuarioLogueado} onLogout={handleLogout} />
     );
   }
 
@@ -174,44 +177,18 @@ function App() {
         <h2 className="login-title">Sistema de Login</h2>
 
         {error && (
-          <div 
-            className="error-message" 
-            style={{ 
-              color: "#ef4444", 
-              marginBottom: "15px", 
-              padding: "10px", 
-              background: "#fee2e2", 
-              borderRadius: "6px",
-              fontSize: "14px",
-              whiteSpace: "pre-line",
-              lineHeight: "1.6"
-            }}
-          >
+          <div className="error-message" style={{ color: "#ef4444", marginBottom: "15px", padding: "10px", background: "#fee2e2", borderRadius: "6px", fontSize: "14px", whiteSpace: "pre-line", lineHeight: "1.6" }} >
             {error}
           </div>
         )}
 
         <form onSubmit={handleLogin}>
           <div className="form-group">
-            <input
-              type="text"
-              className="input-field"
-              placeholder="Correo"
-              value={correo}
-              onChange={(e) => setCorreo(e.target.value)}
-              required
-            />
+            <input type="text" className="input-field" placeholder="Correo" value={correo} onChange={(e) => setCorreo(e.target.value)} required/>
           </div>
 
           <div className="form-group">
-            <input
-              type="password"
-              className="input-field"
-              placeholder="Contraseña"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+            <input type="password" className="input-field" placeholder="Contraseña" value={password} onChange={(e) => setPassword(e.target.value)} required/>
           </div>
 
           <button type="submit" className="login-button" disabled={cargando}>
@@ -220,8 +197,7 @@ function App() {
         </form>
 
         <div className="login-links">
-          <button
-            className="link-button"
+          <button className="link-button"
             onClick={() => {
               setMostrarRecuperarPassword(true);
               setError("");

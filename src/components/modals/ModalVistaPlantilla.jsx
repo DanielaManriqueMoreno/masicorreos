@@ -1,11 +1,16 @@
 import "./ModalVistaPlantilla.css";
+import { useUsuario } from "../../context/UserContext.jsx";
 
 export default function ModalVistaPlantilla({
   plantilla,
   onClose,
   onEditar
 }) {
-  console.log("Rendering ModalVistaPlantilla with plantilla:", plantilla);
+  const { usuario } = useUsuario();
+  
+  console.log("Usuario desde contexto (RAW):", usuario);
+  console.log("Keys usuario:", usuario ? Object.keys(usuario) : "null");
+
   return (
     <div className="modal-overlay">
       <div className="modal-container">
@@ -29,9 +34,17 @@ export default function ModalVistaPlantilla({
 
           <button
             className="btn-download"
-            onClick={() =>
-              window.open(`/api/templates/${plantilla.id}/excel`, "_blank")
-            }
+            onClick={() => {
+              if (!usuario) {
+                console.error("Usuario no disponible");
+                return;
+              }
+
+              const API_URL = "http://localhost:3001"; 
+
+              window.open(
+                `${API_URL}/api/templates/${plantilla.id}/download-excel`,"_blank");
+            }}
           >
             📥 Descargar Excel
           </button>
