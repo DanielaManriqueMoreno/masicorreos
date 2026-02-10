@@ -1,0 +1,23 @@
+.envios-container {
+  max-width: 500px;
+  margin: auto;
+  padding: 20px;
+}
+
+.envios-container label {
+  display: block;
+  margin-top: 15px;
+}
+
+.envios-container input,
+.envios-container select {
+  width: 100%;
+  padding: 8px;
+  margin-top: 5px;
+}
+
+.envios-container button {
+  margin-top: 20px;
+  padding: 10px;
+  width: 100%;
+}

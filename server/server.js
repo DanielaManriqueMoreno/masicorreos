@@ -3,6 +3,8 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
+import upload from './utils/multer.js';
+import { procesarEnvio } from '../src/components/Envios/utils/multer.js';
 import { fileURLToPath } from 'url';
 
 // Cargar .env PRIMERO antes de importar otros módulos
@@ -590,32 +592,128 @@ app.post('/api/reset-password', async (req, res) => {
 });
 
 // ==================== ENDPOINTS DE ENVÍO DE CORREOS ====================
-app.post('/api/envios', async (req, res) => {
-  const {
-    tipo,
-    fechaProgramada,
-    html,
-    asunto,
-    destinatarios
-  } = req.body;
+app.post('/api/envios', upload.single('archivo'), async (req, res) => {
+  try {
+    const {
+      plantillaId,
+      fromEmail,
+      modoEnvio,
+      programadoPara
+    } = req.body;
 
-  if (tipo === 'inmediato') {
-    await enviarCorreos(destinatarios, asunto, html);
-  }
+    if (!req.file) {
+      return res.status(400).json({
+        ok: false,
+        message: 'Debe enviar un archivo Excel'
+      });
+    }
 
-  if (tipo === 'programado') {
-    await guardarEnvioProgramado({
-      fechaProgramada,
-      asunto,
-      html,
-      destinatarios
+    // =========================
+    // LEER EXCEL
+    // =========================
+    const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+    if (!rows.length) {
+      return res.status(400).json({
+        ok: false,
+        message: 'El archivo está vacío'
+      });
+    }
+
+    // =========================
+    // ARMAR DESTINATARIOS
+    // =========================
+    const destinatarios = rows
+      .filter(r => r.email)
+      .map(r => {
+        const { email, Email, ...variables } = r;
+        return {
+          email: email || Email,
+          variables
+        };
+      });
+
+    if (!destinatarios.length) {
+      return res.status(400).json({
+        ok: false,
+        message: 'No se encontraron correos válidos'
+      });
+    }
+
+    // =========================
+    // ENVÍO INMEDIATO
+    // =========================
+    if (modoEnvio === 'inmediato') {
+      let enviados = 0;
+      let fallidos = 0;
+
+      for (const d of destinatarios) {
+        try {
+          await enviarCorreo({
+            to: d.email,
+            from: fromEmail,
+            plantillaId,
+            variables: d.variables
+          });
+          enviados++;
+        } catch (e) {
+          fallidos++;
+        }
+      }
+
+      return res.json({
+        ok: true,
+        results: {
+          total: destinatarios.length,
+          sent: enviados,
+          failed: fallidos,
+          scheduled: 0
+        }
+      });
+    }
+
+    // =========================
+    // ENVÍO PROGRAMADO
+    // =========================
+    if (modoEnvio === 'programado') {
+      await pool.query(
+        `INSERT INTO envios_programados
+         (plantilla_id, from_email, programado_para, payload)
+         VALUES (?, ?, ?, ?)`,
+        [
+          plantillaId,
+          fromEmail,
+          programadoPara,
+          JSON.stringify(destinatarios)
+        ]
+      );
+
+      return res.json({
+        ok: true,
+        results: {
+          total: destinatarios.length,
+          sent: 0,
+          failed: 0,
+          scheduled: destinatarios.length
+        }
+      });
+    }
+
+    return res.status(400).json({
+      ok: false,
+      message: 'Modo de envío no válido'
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      ok: false,
+      message: 'Error en el envío'
     });
   }
-
-  res.json({ success: true });
 });
-
-// ==================== SCHEDULER DE CORREOS PROGRAMADOS ====================
 
 // Procesar correos programados pendientes
 const processScheduledEmails = async () => {
@@ -980,300 +1078,17 @@ app.get('/api/registros/actividad', async (req, res) => {
   }
 });
 
-// Obtener correos básicos
-app.get('/api/registros/correos', async (req, res) => {
-  try {
-    const { userId } = req.query;
-    let query = `
-      SELECT el.*, u.nombre as user_nombre, u.usuario as username
-      FROM email_logs el
-      JOIN usuarios u ON el.user_id = u.id
-    `;
-    const params = [];
-    
-    if (userId && userId !== 'todos') {
-      query += ' WHERE el.user_id = ?';
-      params.push(userId);
-    }
-    
-    query += ' ORDER BY el.timestamp DESC LIMIT 1000';
-    
-    const [registros] = await pool.execute(query, params);
-    res.json({ success: true, registros });
-  } catch (error) {
-    console.error('Error obteniendo correos:', error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
+// Obtener correos fallidos 
 
-// Obtener correos con plantillas
-app.get('/api/registros/correos-plantillas', async (req, res) => {
-  try {
-    const { userId } = req.query;
-    let query = `
-      SELECT cte.*, u.nombre as user_nombre, u.usuario as username, et.nombre as template_name
-      FROM custom_template_emails cte
-      JOIN usuarios u ON cte.user_id = u.id
-      LEFT JOIN plantillas et ON cte.template_id = et.id
-    `;
-    const params = [];
-    
-    if (userId && userId !== 'todos') {
-      query += ' WHERE cte.user_id = ?';
-      params.push(userId);
-    }
-    
-    query += ' ORDER BY cte.created_at DESC LIMIT 1000';
-    
-    const [registros] = await pool.execute(query, params);
-    res.json({ success: true, registros });
-  } catch (error) {
-    console.error('Error obteniendo correos con plantillas:', error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-// Obtener correos fallidos (de todas las tablas)
-app.get('/api/registros/correos-fallidos', async (req, res) => {
-  try {
-    const { userId } = req.query;
-    const registros = [];
-    
-    // Correos fallidos de Sistema de Citas
-    let queryCitas = `
-      SELECT 
-        cf.id, 
-        cf.user_id, 
-        cf.recipient_email, 
-        cf.error_message, 
-        COALESCE(cf.intentos_envio, 1) as intentos_envio, 
-        cf.created_at,
-        'Sistema de Citas' as sistema,
-        cf.patient_name, 
-        cf.tipo_cita,
-        COALESCE(u.nombre, u.usuario, 'N/A') as username
-      FROM correosfallidosdesistemascitas cf
-      LEFT JOIN usuarios u ON cf.user_id = u.id
-    `;
-    const paramsCitas = [];
-    if (userId && userId !== 'todos') {
-      queryCitas += ' WHERE cf.user_id = ?';
-      paramsCitas.push(userId);
-    }
-    queryCitas += ' ORDER BY cf.created_at DESC LIMIT 500';
-    const [citas] = await pool.execute(queryCitas, paramsCitas);
-    citas.forEach(r => {
-      registros.push(r);
-    });
-    
-    // Correos fallidos de Dengue - Calidad
-    let queryDengue = `
-      SELECT 
-        cf.id, 
-        cf.user_id, 
-        cf.recipient_email, 
-        cf.error_message, 
-        COALESCE(cf.intentos_envio, 1) as intentos_envio, 
-        cf.created_at,
-        'Dengue - Calidad' as sistema,
-        cf.tipo_plantilla,
-        COALESCE(u.nombre, u.usuario, 'N/A') as username
-      FROM correosfallidosdengue_calidad cf
-      LEFT JOIN usuarios u ON cf.user_id = u.id
-    `;
-    const paramsDengue = [];
-    if (userId && userId !== 'todos') {
-      queryDengue += ' WHERE cf.user_id = ?';
-      paramsDengue.push(userId);
-    }
-    queryDengue += ' ORDER BY cf.created_at DESC LIMIT 500';
-    const [dengue] = await pool.execute(queryDengue, paramsDengue);
-    dengue.forEach(r => {
-      registros.push(r);
-    });
-    
-    // Correos fallidos de Cursos Obligatorios
-    let queryCursos = `
-      SELECT 
-        cf.id, 
-        cf.user_id, 
-        cf.recipient_email, 
-        cf.error_message, 
-        COALESCE(cf.intentos_envio, 1) as intentos_envio, 
-        cf.created_at,
-        'Cursos Obligatorios' as sistema,
-        cf.nombre_empleado, 
-        cf.nombre_curso,
-        COALESCE(u.nombre, u.usuario, 'N/A') as username
-      FROM correosfallidosdecursosobligatorios cf
-      LEFT JOIN usuarios u ON cf.user_id = u.id
-    `;
-    const paramsCursos = [];
-    if (userId && userId !== 'todos') {
-      queryCursos += ' WHERE cf.user_id = ?';
-      paramsCursos.push(userId);
-    }
-    queryCursos += ' ORDER BY cf.created_at DESC LIMIT 500';
-    const [cursos] = await pool.execute(queryCursos, paramsCursos);
-    cursos.forEach(r => {
-      registros.push(r);
-    });
-    
-    // Correos fallidos de Plantillas Personalizadas
-    let queryPlantillas = `
-      SELECT 
-        cte.id, 
-        cte.user_id, 
-        cte.recipient_email, 
-        cte.error_message, 
-        COALESCE(cte.intentos_envio, 1) as intentos_envio, 
-        cte.created_at, 
-        cte.last_attempt_at,
-        'Plantillas Personalizadas' as sistema,
-        cte.template_id, 
-        cte.subject,
-        COALESCE(u.nombre, u.usuario, 'N/A') as username
-      FROM custom_template_emails cte
-      LEFT JOIN usuarios u ON cte.user_id = u.id
-      WHERE cte.status = 'FALLIDO'
-    `;
-    const paramsPlantillas = [];
-    if (userId && userId !== 'todos') {
-      queryPlantillas += ' AND cte.user_id = ?';
-      paramsPlantillas.push(userId);
-    }
-    queryPlantillas += ' ORDER BY cte.created_at DESC LIMIT 500';
-    const [plantillas] = await pool.execute(queryPlantillas, paramsPlantillas);
-    plantillas.forEach(r => {
-      registros.push(r);
-    });
-    
-    // Ordenar todos por fecha
-    registros.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    
-    console.log(`📊 Total de correos fallidos encontrados: ${registros.length}`);
-    console.log(`   - Sistema de Citas: ${citas.length}`);
-    console.log(`   - Dengue - Calidad: ${dengue.length}`);
-    console.log(`   - Cursos Obligatorios: ${cursos.length}`);
-    console.log(`   - Plantillas Personalizadas: ${plantillas.length}`);
-    
-    res.json({ success: true, registros: registros.slice(0, 1000) });
-  } catch (error) {
-    console.error('❌ Error obteniendo correos fallidos:', error);
-    console.error('   Stack:', error.stack);
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
 
 // Obtener correos programados
-app.get('/api/registros/correos-programados', async (req, res) => {
-  try {
-    const { userId } = req.query;
-    let query = `
-      SELECT se.*, u.nombre as user_nombre, u.usuario as username
-      FROM scheduled_emails se
-      JOIN usuarios u ON se.user_id = u.id
-    `;
-    const params = [];
-    
-    if (userId && userId !== 'todos') {
-      query += ' WHERE se.user_id = ?';
-      params.push(userId);
-    }
-    
-    query += ' ORDER BY se.scheduled_datetime DESC LIMIT 1000';
-    
-    const [registros] = await pool.execute(query, params);
-    res.json({ success: true, registros });
-  } catch (error) {
-    console.error('Error obteniendo correos programados:', error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
+
 
 // Cancelar un correo programado
-app.delete('/api/correos-programados/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { userId } = req.query;
-    
-    if (!userId) {
-      return res.status(400).json({ success: false, message: 'userId es requerido' });
-    }
 
-    // Verificar que el correo pertenece al usuario y está pendiente
-    const [existing] = await pool.execute(
-      'SELECT id, status FROM scheduled_emails WHERE id = ? AND user_id = ?',
-      [id, userId]
-    );
-
-    if (existing.length === 0) {
-      return res.status(404).json({ success: false, message: 'Correo programado no encontrado' });
-    }
-
-    if (existing[0].status !== 'PENDING') {
-      return res.status(400).json({ success: false, message: 'Solo se pueden cancelar correos con estado PENDING' });
-    }
-
-    // Actualizar estado a CANCELADO
-    await pool.execute(
-      'UPDATE scheduled_emails SET status = ? WHERE id = ?',
-      ['CANCELADO', id]
-    );
-
-    await logActivity(parseInt(userId), 'Usuario', 'CANCELAR_CORREO_PROGRAMADO', `Correo programado cancelado: ID ${id}`);
-
-    res.json({ success: true, message: 'Correo programado cancelado exitosamente' });
-  } catch (error) {
-    console.error('Error cancelando correo programado:', error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
 
 // Reprogramar un correo (cambiar fecha/hora)
-app.put('/api/correos-programados/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { userId, nuevaFecha, nuevaHora } = req.body;
-    
-    if (!userId || !nuevaFecha || !nuevaHora) {
-      return res.status(400).json({ success: false, message: 'userId, nuevaFecha y nuevaHora son requeridos' });
-    }
 
-    // Verificar que el correo pertenece al usuario y está pendiente
-    const [existing] = await pool.execute(
-      'SELECT id, status FROM scheduled_emails WHERE id = ? AND user_id = ?',
-      [id, userId]
-    );
-
-    if (existing.length === 0) {
-      return res.status(404).json({ success: false, message: 'Correo programado no encontrado' });
-    }
-
-    if (existing[0].status !== 'PENDING') {
-      return res.status(400).json({ success: false, message: 'Solo se pueden reprogramar correos con estado PENDING' });
-    }
-
-    // Parsear nueva fecha
-    const nuevaDatetime = parseDatetime(nuevaFecha, nuevaHora);
-    if (!nuevaDatetime) {
-      return res.status(400).json({ success: false, message: 'Fecha/hora inválida o en el pasado' });
-    }
-
-    // Actualizar fecha programada
-    await pool.execute(
-      'UPDATE scheduled_emails SET scheduled_datetime = ? WHERE id = ?',
-      [nuevaDatetime, id]
-    );
-
-    await logActivity(parseInt(userId), 'Usuario', 'REPROGRAMAR_CORREO', `Correo reprogramado: ID ${id} para ${nuevaFecha} ${nuevaHora}`);
-
-    res.json({ success: true, message: 'Correo reprogramado exitosamente' });
-  } catch (error) {
-    console.error('Error reprogramando correo:', error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
 
 // Middleware para manejar rutas API no encontradas 
 app.use('/api/*', (req, res) => {
@@ -1347,4 +1162,3 @@ const startServer = async () => {
 };
 
 startServer();
-

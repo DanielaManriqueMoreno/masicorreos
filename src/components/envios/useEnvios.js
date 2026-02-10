@@ -1,158 +1,101 @@
-import { useState, useCallback } from 'react';
-import * as XLSX from 'xlsx';
-import { saveAs } from 'file-saver';
+import { useState } from 'react';
 
-/* =========================
-   FUNCIONES AUXILIARES
-========================= */
-
-const leerExcelArchivo = async (file) => {
-  const data = await file.arrayBuffer();
-  const workbook = XLSX.read(data);
-  const sheet = workbook.Sheets[workbook.SheetNames[0]];
-
-  return XLSX.utils.sheet_to_json(sheet, {
-    defval: "",
-    trim: true
-  });
-};
-
-const validarExcel = (rows) => {
-  if (!rows.length) return "El archivo está vacío";
-
-  if (!rows[0].email) {
-    return 'La columna "email" es obligatoria';
-  }
-
-  const sinCorreo = rows.filter(r => !r.email);
-  if (sinCorreo.length) {
-    return `Hay ${sinCorreo.length} filas sin correo`;
-  }
-
-  return null;
-};
-
-/* =========================
-   HOOK PRINCIPAL
-========================= */
-
-export const useEnvios = (plantillaSeleccionada, usuario) => {
-
-  // ----------- ESTADOS -----------
-  const [file, setFile] = useState(null);
+export default function useEnvios() {
+  // ---------------- ESTADOS ----------------
+  const [archivo, setArchivo] = useState(null);
   const [fileName, setFileName] = useState('');
-  const [rowsExcel, setRowsExcel] = useState([]);
 
-  const [dragActive, setDragActive] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [results, setResults] = useState(null);
+  const [modoEnvio, setModoEnvio] = useState('inmediato'); // inmediato | programado
+  const [fechaProgramada, setFechaProgramada] = useState('');
 
   const [correoRemitenteEnvio, setCorreoRemitenteEnvio] =
     useState('micita@umit.com.co');
 
-  // ----------- DRAG & DROP -----------
-  const handleDrag = useCallback((e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(e.type === 'dragenter' || e.type === 'dragover');
-  }, []);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [results, setResults] = useState(null);
 
-  const handleDrop = useCallback((e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
+  // ---------------- ARCHIVO ----------------
+  const handleArchivo = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-    if (e.dataTransfer.files?.[0]) {
-      processFile(e.dataTransfer.files[0]);
-    }
-  }, []);
-
-  const handleFileSelect = (e) => {
-    if (e.target.files?.[0]) {
-      processFile(e.target.files[0]);
-    }
-  };
-
-  // ----------- PROCESAR ARCHIVO (PASO 1) -----------
-  const processFile = async (file) => {
-    const ext = file.name.split('.').pop().toLowerCase();
-    if (!['csv', 'xlsx'].includes(ext)) {
-      alert('Formato no soportado (.csv o .xlsx)');
+    if (!file.name.endsWith('.xlsx')) {
+      alert('Solo se permiten archivos Excel (.xlsx)');
       return;
     }
 
-    try {
-      const rows = await leerExcelArchivo(file);
-      const error = validarExcel(rows);
+    setArchivo(file);
+    setFileName(file.name);
+  };
 
-      if (error) {
-        alert(error);
-        setFile(null);
-        setFileName('');
-        setRowsExcel([]);
+  // ---------------- ENVÍO ----------------
+  const enviarCorreos = async ({ preview = false }) => {
+    if (!archivo) {
+      alert('Debe cargar un archivo');
+      return;
+    }
+
+    if (modoEnvio === 'programado' && !fechaProgramada) {
+      alert('Debe seleccionar una fecha');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('archivo', archivo);
+    formData.append('modoEnvio', modoEnvio);
+    formData.append('programadoPara', fechaProgramada || '');
+    formData.append('fromEmail', correoRemitenteEnvio);
+    formData.append('preview', preview);
+
+    try {
+      setIsProcessing(true);
+      setProgress(20);
+
+      const res = await fetch('/api/envios', {
+        method: 'POST',
+        body: formData
+      });
+
+      setProgress(70);
+
+      const data = await res.json();
+
+      if (!data.ok) {
+        alert(data.message || 'Error en el envío');
         return;
       }
 
-      setFile(file);
-      setFileName(file.name);
-      setRowsExcel(rows);
+      setResults(data.results);
+      setProgress(100);
 
-      console.log('✅ Excel válido:', rows);
-    } catch (err) {
-      alert('Error leyendo el archivo');
+    } catch (error) {
+      console.error(error);
+      alert('Error enviando correos');
+    } finally {
+      setIsProcessing(false);
     }
   };
 
-  // ----------- DESCARGAR PLANTILLA EXCEL -----------
-  const descargarPlantillaExcel = () => {
-    if (!plantillaSeleccionada?.variables?.length) {
-      alert('No hay campos dinámicos');
-      return;
-    }
-
-    const variables = plantillaSeleccionada.variables.filter(
-      v => v.toLowerCase() !== 'email'
-    );
-
-    const data = [
-      { email: 'correo@ejemplo.com', ...Object.fromEntries(variables.map(v => [v, ''])) }
-    ];
-
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Datos');
-
-    const buffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-    saveAs(
-      new Blob([buffer], {
-        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-      }),
-      'Plantilla.xlsx'
-    );
-  };
-
-  // ----------- EXPORT -----------
+  // ---------------- EXPORT ----------------
   return {
     // estados
-    file,
+    archivo,
     fileName,
-    rowsExcel,
-    dragActive,
+    modoEnvio,
+    fechaProgramada,
+    correoRemitenteEnvio,
     isProcessing,
     progress,
     results,
-    correoRemitenteEnvio,
 
     // setters
-    setFile,
-    setFileName,
+    setModoEnvio,
+    setFechaProgramada,
     setCorreoRemitenteEnvio,
 
     // handlers
-    handleDrag,
-    handleDrop,
-    handleFileSelect,
-    descargarPlantillaExcel
+    handleArchivo,
+    enviarCorreos
   };
-};
+}
