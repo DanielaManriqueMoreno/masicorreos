@@ -9,7 +9,8 @@ const AREAS = [
   { id: "radicacion", label: "📝 Radicación" },
   { id: "sistemas", label: "💻 Sistemas" },
   { id: "plantillas", label: "📄 Plantillas" },
-  { id: "registros", label: "📂 Registros" },
+  { id: "envios", label: "📤 Envios"},
+  { id: "registros", label: "📂 Registros", soloAdmin: true },
   { id: "usuarios", label: "👤 Usuarios", soloAdmin: true },
 ];
 

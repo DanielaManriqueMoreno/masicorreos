@@ -12,6 +12,7 @@ import Contabilidad from "./components/Contabilidad/Contabilidad";
 import CrearPlantilla from "./components/Plantillas/CrearPlantilla";
 import VerRegistros from "./components/Registros/VerRegistros";
 import Usuarios from "./components/Administrador/Usuarios";
+import Envios from "./components/Envios/Envios";
 import Perfil from "./components/Perfil/Perfil";
 import RecuperarPassword from "./components/RecuperarPassword/RecuperarPassword";
 import Sidebar from "./components/Layout/Sidebar";
@@ -48,14 +49,8 @@ function Interfaz1({ onSelect, onLogout, usuario }) {
       case "calidad":
         return <Calidad />;
 
-      case "sistema-dengue":
-        return <SistemaDengue usuario={usuario} />;
-
       case "talento":
         return <TalentoHumano />;
-
-      case "sistema-cursos":
-        return <SistemaCursos usuario={usuario} />;
 
       case "sistemas":
         return <Sistemas onSelect={onSelect} />;
@@ -71,6 +66,9 @@ function Interfaz1({ onSelect, onLogout, usuario }) {
 
       case "ver-registros":
         return <VerRegistros usuario={usuario} />;
+
+      case "envios":
+        return <Envios onSelect={onSelect}/>;
 
       case "crear-usuario":
         return <Usuarios />;

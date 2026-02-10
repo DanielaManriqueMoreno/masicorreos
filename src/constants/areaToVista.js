@@ -6,5 +6,6 @@ export const AREA_TO_VISTA = {
   radicacion: "radicacion",
   sistemas: "sistemas",
   plantillas: "crear-plantilla",
+  envios: "envios",
   usuarios: "crear-usuario",
 };
