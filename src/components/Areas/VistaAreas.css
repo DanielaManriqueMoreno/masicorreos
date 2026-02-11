@@ -1,20 +1,34 @@
-/* Calidad.css */
-.calidad-container {
+.vista-area-container {
   width: 100%;
-  min-height: 100vh; /* 🔹 asegura altura completa */
+  min-height: 100vh; 
   padding: 40px 48px;
   background-color: #f3f4f6;
   box-sizing: border-box;
 }
 
-.calidad-content {
+.vista-area-content {
   width: 900px;
 }
+
+.main-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.3px;
+}
+
+.main-subtitle {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0 0 32px 0;
+}
+
 
 .plantillas-list {
   display: flex;
   flex-direction: column;
-  gap: 16px; /* separación clara entre cards */
+  gap: 16px; 
 }
 
 .plantilla-card {

@@ -1,18 +1,7 @@
+// src/components/Layout/Sidebar.jsx
 import "./Sidebar.css";
-import { AREA_TO_VISTA } from "../../constants/areaToVista";
-
-const AREAS = [
-  { id: "citas", label: "📅 Citas" },
-  { id: "calidad", label: "📊 Calidad" },
-  { id: "talento", label: "👥 Talento Humano" },
-  { id: "contabilidad", label: "📘 Contabilidad" },
-  { id: "radicacion", label: "📝 Radicación" },
-  { id: "sistemas", label: "💻 Sistemas" },
-  { id: "plantillas", label: "📄 Plantillas" },
-  { id: "envios", label: "📤 Envios"},
-  { id: "registros", label: "📂 Registros", soloAdmin: true },
-  { id: "usuarios", label: "👤 Usuarios", soloAdmin: true },
-];
+import { useEffect, useState } from "react";
+import axios from "axios";
 
 export default function Sidebar({
   usuario,
@@ -21,30 +10,44 @@ export default function Sidebar({
   setAreaActiva,
   onLogout
 }) {
+  const [areas, setAreas] = useState([]);
   const esAdmin = usuario?.rol === "ADMINISTRADOR";
+
+  useEffect(() => {
+    const cargarAreas = async () => {
+      try {
+        const res = await axios.get("/api/areas");
+        setAreas(res.data);
+      } catch (error) {
+        console.error("Error cargando áreas", error);
+      }
+    };
+
+    cargarAreas();
+  }, []);
 
   const puedeVerArea = (area) => {
     if (esAdmin) return true;
-    if (area.soloAdmin) return false;
-    return usuario.areas?.includes(area.id);
+    return usuario?.areas?.includes(area.id);
   };
-
 
   return (
     <aside className="sidebar">
       <h2 className="sidebar-title">ÁREAS</h2>
 
       <nav className="sidebar-menu">
-        {AREAS.filter(puedeVerArea).map((area) => (
+        {areas.filter(puedeVerArea).map((area) => (
           <button
             key={area.id}
-            className={`menu-item ${areaActiva === area.id ? "active" : ""}`}
+            className={`menu-item ${
+              areaActiva?.id === area.id ? "active" : ""
+            }`}
             onClick={() => {
-              setVistaActual(AREA_TO_VISTA[area.id]);
-              setAreaActiva(area.id);
+              setAreaActiva(area);
+              setVistaActual(null);
             }}
           >
-            {area.label}
+            {area.icono} {area.nombre}
           </button>
         ))}
       </nav>
@@ -54,7 +57,10 @@ export default function Sidebar({
       <nav className="sidebar-menu">
         <button
           className="menu-item"
-          onClick={() => setVistaActual("perfil")}
+          onClick={() => {
+            setAreaActiva(null);
+            setVistaActual("perfil");
+          }}
         >
           👤 Mi Perfil
         </button>

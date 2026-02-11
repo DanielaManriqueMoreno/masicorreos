@@ -1,39 +1,49 @@
-// Radicacion.jsx
-import "./Radicacion.css";
+import { useEffect, useState } from "react";
+import axios from "axios";
+import "./VistaAreas.css"; 
 
-function Radicacion({ onVolver }) {
+import ModalVistaPlantilla from "../modals/ModalVistaPlantilla";
+import ModalEditarPlantilla from "../modals/ModalEditarPlantilla";
+
+const getUserId = () => {
+  try {
+    const user = JSON.parse(localStorage.getItem("usuarioLogueado"));
+    return user?.documento || null;
+  } catch {
+    return null;
+  }
+};
+
+function VistaArea({ areaId, nombreArea }) {
   const [plantillas, setPlantillas] = useState([]);
   const [plantillaSeleccionada, setPlantillaSeleccionada] = useState(null);
   const [plantillaEditando, setPlantillaEditando] = useState(null);
-  const [variables, setVariables] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  const AREA_ID_RADICACION = 9; 
 
   useEffect(() => {
     const cargarPlantillas = async () => {
       try {
         const res = await axios.get("/api/templates", {
-          params: { area_id: AREA_ID_RADICACION }
+          params: { area_id: areaId }
         });
 
-        console.log("Plantillas Radicacion:", res.data);
         setPlantillas(res.data);
       } catch (error) {
-        console.error("Error cargando plantillas de Radicacion", error);
+        console.error("Error cargando plantillas", error);
       } finally {
         setLoading(false);
       }
     };
 
-    cargarPlantillas();
-  }, []);
-console.log("Plantilla seleccionada:", plantillaSeleccionada);
-console.log("Contenido render:",plantillaSeleccionada?.contenido);
+    if (areaId) {
+      setLoading(true);
+      cargarPlantillas();
+    }
+  }, [areaId]);
 
   return (
-    <div className="Radicacion-container">
-      <h1 className="main-title">Radicacion</h1>
+    <div className="calidad-container">
+      <h1 className="main-title">{nombreArea}</h1>
       <p className="main-subtitle">Plantillas disponibles</p>
 
       {loading ? (
@@ -43,9 +53,11 @@ console.log("Contenido render:",plantillaSeleccionada?.contenido);
       ) : (
         <div className="plantillas-list">
           {plantillas.map((p) => (
-            <div className="plantilla-card"
+            <div
+              className="plantilla-card"
               key={p.id}
-              onClick={() => setPlantillaSeleccionada({
+              onClick={() =>
+                setPlantillaSeleccionada({
                   id: p.id,
                   nombre: p.nom_plantilla,
                   descripcion: p.descripcion,
@@ -62,9 +74,7 @@ console.log("Contenido render:",plantillaSeleccionada?.contenido);
                 </p>
               </div>
 
-              <div className="plantilla-action">
-                ➜
-              </div>
+              <div className="plantilla-action">➜</div>
             </div>
           ))}
         </div>
@@ -87,56 +97,50 @@ console.log("Contenido render:",plantillaSeleccionada?.contenido);
       )}
 
       {plantillaEditando && (
-          <ModalEditarPlantilla
-            plantilla={plantillaEditando}
-            onClose={() => setPlantillaEditando(null)}
-            onSave={async (plantillaActualizada) => {
-              try {
-                const userId = getUserId();
+        <ModalEditarPlantilla
+          plantilla={plantillaEditando}
+          onClose={() => setPlantillaEditando(null)}
+          onSave={async (plantillaActualizada) => {
+            try {
+              const userId = getUserId();
 
-                if (!userId) {
-                  alert("No se pudo identificar el usuario");
-                  return;
-                }
+              if (!userId) {
+                alert("No se pudo identificar el usuario");
+                return;
+              }
 
-                const payload = {
+              await axios.put(
+                `/api/templates/${plantillaActualizada.id}`,
+                {
                   userId,
                   descripcion: plantillaActualizada.descripcion,
                   htmlContent: plantillaActualizada.contenido
-                };
+                }
+              );
 
-                await axios.put(
-                  `/api/templates/${plantillaActualizada.id}`,
-                  payload
-                );
+              setPlantillas(prev =>
+                prev.map(p =>
+                  p.id === plantillaActualizada.id
+                    ? {
+                        ...p,
+                        descripcion: plantillaActualizada.descripcion,
+                        html_content: plantillaActualizada.contenido
+                      }
+                    : p
+                )
+              );
 
-                //  actualizar lista en memoria
-                setPlantillas(prev =>
-                  prev.map(p =>
-                    p.id === plantillaActualizada.id
-                      ? {
-                          ...p,
-                          descripcion: plantillaActualizada.descripcion,
-                          html_content: plantillaActualizada.contenido
-                        }
-                      : p
-                  )
-                );
+              setPlantillaEditando(null);
 
-                // cerrar modal
-                setPlantillaEditando(null);
-
-              } catch (error) {
-                console.error("Error guardando plantilla:", error);
-                alert("No se pudo guardar la plantilla");
-              }
-            }}
-          />
-        )}
+            } catch (error) {
+              console.error("Error guardando plantilla:", error);
+              alert("No se pudo guardar la plantilla");
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
 
-
-export default Radicacion;
-
+export default VistaArea;

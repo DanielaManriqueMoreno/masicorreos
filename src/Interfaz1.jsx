@@ -1,14 +1,7 @@
 // src/Interfaz1.jsx
 import "./Interfaz1.css";
-import { useState,setVista } from "react";
-import { AREA_TO_VISTA } from "./constants/areaToVista";
-
-import SistemaCitas from "./components/Citas/SistemaCitas";
-import Calidad from "./components/Calidad/Calidad";
-import TalentoHumano from "./components/TalentoHumano/TalentoHumano";
-import Sistemas from "./components/Sistemas/Sistemas";
-import Radicacion from "./components/Radicacion/Radicacion";
-import Contabilidad from "./components/Contabilidad/Contabilidad";
+import { useState } from "react";
+import VistaArea from "./components/Areas/VistaAreas";
 import CrearPlantilla from "./components/Plantillas/CrearPlantilla";
 import VerRegistros from "./components/Registros/VerRegistros";
 import Usuarios from "./components/Administrador/Usuarios";
@@ -23,44 +16,19 @@ function Interfaz1({ onSelect, onLogout, usuario }) {
   const [mostrarRecuperarPassword, setMostrarRecuperarPassword] =
     useState(false);
 
-  const esAdmin = usuario?.rol === "ADMINISTRADOR";
-
-  const puedeAccederVista = (vista) => {
-    if (esAdmin) return true;
-
-    const area = Object.keys(AREA_TO_VISTA).find(
-      (key) => AREA_TO_VISTA[key] === vista
-    );
-
-    if (!area) return true; // perfil, registros, etc.
-
-    return usuario?.areas?.includes(area);
-  };
-
   const renderVista = () => {
-    if (!puedeAccederVista(vistaActual)) {
-      return <PerfilUsuario usuario={usuario} />;
+
+    // 🔥 Si hay un área activa → SIEMPRE renderiza VistaArea
+    if (areaActiva) {
+      return (
+        <VistaArea
+          areaId={areaActiva.id}
+          nombreArea={areaActiva.nombre}
+        />
+      );
     }
 
     switch (vistaActual) {
-      case "sistema-citas":
-        return <SistemaCitas usuario={usuario} />;
-
-      case "calidad":
-        return <Calidad />;
-
-      case "talento":
-        return <TalentoHumano />;
-
-      case "sistemas":
-        return <Sistemas onSelect={onSelect} />;
-
-      case "radicacion":
-        return <Radicacion onSelect={onSelect} />;
-
-      case "contabilidad":
-        return <Contabilidad onSelect={onSelect} />;
-
       case "crear-plantilla":
         return <CrearPlantilla usuario={usuario} />;
 
@@ -68,7 +36,7 @@ function Interfaz1({ onSelect, onLogout, usuario }) {
         return <VerRegistros usuario={usuario} />;
 
       case "envios":
-        return <Envios onSelect={onSelect}/>;
+        return <Envios onSelect={onSelect} />;
 
       case "crear-usuario":
         return <Usuarios />;
@@ -82,7 +50,8 @@ function Interfaz1({ onSelect, onLogout, usuario }) {
   return (
     <>
       <div className="interfaz-container">
-        <Sidebar usuario={usuario}
+        <Sidebar
+          usuario={usuario}
           areaActiva={areaActiva}
           setAreaActiva={setAreaActiva}
           setVistaActual={setVistaActual}
