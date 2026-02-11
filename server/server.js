@@ -1,10 +1,11 @@
 // server.js - Servidor Express
 import express from 'express';
+import fs from 'fs';
 import cors from 'cors';
+import XLSX from 'xlsx';
 import dotenv from 'dotenv';
 import path from 'path';
-import upload from './utils/multer.js';
-import { procesarEnvio } from '../src/components/Envios/utils/multer.js';
+import upload from '../src/components/Envios/utils/multer.js';
 import { fileURLToPath } from 'url';
 
 // Cargar .env PRIMERO antes de importar otros módulos
@@ -16,7 +17,6 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 import pool, { testConnection, createUsersTable } from './database.js';
 import bcrypt from 'bcryptjs';
 import multer from 'multer';
-import * as XLSX from 'xlsx';
 import crypto from 'crypto';
 import {
   sendHtmlEmail,
@@ -106,7 +106,7 @@ app.post('/api/login', async (req, res) => {
 
 
 // Configurar multer para archivos
-const upload = multer({ storage: multer.memoryStorage() });
+//const upload = multer({ storage: multer.memoryStorage() });
 
 // Listar usuarios (ADMIN)
 app.get('/api/admin/usuarios', async (req, res) => {
@@ -594,6 +594,17 @@ app.post('/api/reset-password', async (req, res) => {
 // ==================== ENDPOINTS DE ENVÍO DE CORREOS ====================
 app.post('/api/envios', upload.single('archivo'), async (req, res) => {
   try {
+    console.log('➡️ POST /api/envios');
+
+    if (!req.file) {
+      return res.status(400).json({
+        ok: false,
+        message: 'No se recibió archivo'
+      });
+    }
+
+    console.log('Archivo recibido:', req.file);
+
     const {
       plantillaId,
       fromEmail,
@@ -601,46 +612,29 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
       programadoPara
     } = req.body;
 
-    if (!req.file) {
-      return res.status(400).json({
-        ok: false,
-        message: 'Debe enviar un archivo Excel'
-      });
-    }
-
     // =========================
     // LEER EXCEL
     // =========================
-    const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+    const workbook = XLSX.readFile(req.file.path);
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+
+    const rows = XLSX.utils.sheet_to_json(sheet);
 
     if (!rows.length) {
       return res.status(400).json({
         ok: false,
-        message: 'El archivo está vacío'
+        message: 'El Excel está vacío'
       });
     }
 
-    // =========================
-    // ARMAR DESTINATARIOS
-    // =========================
-    const destinatarios = rows
-      .filter(r => r.email)
-      .map(r => {
-        const { email, Email, ...variables } = r;
-        return {
-          email: email || Email,
-          variables
-        };
-      });
+    console.log('Filas leídas:', rows);
 
-    if (!destinatarios.length) {
-      return res.status(400).json({
-        ok: false,
-        message: 'No se encontraron correos válidos'
-      });
-    }
+    // Convertimos filas en destinatarios
+    const destinatarios = rows.map(row => ({
+      email: row.Email || row.email,   
+      variables: row
+    }));
 
     // =========================
     // ENVÍO INMEDIATO
@@ -651,6 +645,7 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
 
       for (const d of destinatarios) {
         try {
+          console.log("Enviando a:", d.email);
           await enviarCorreo({
             to: d.email,
             from: fromEmail,
@@ -675,7 +670,7 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
     }
 
     // =========================
-    // ENVÍO PROGRAMADO
+    // 3️⃣ ENVÍO PROGRAMADO
     // =========================
     if (modoEnvio === 'programado') {
       await pool.query(
@@ -706,11 +701,11 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
       message: 'Modo de envío no válido'
     });
 
-  } catch (err) {
-    console.error(err);
+  } catch (error) {
+    console.error(error);
     res.status(500).json({
       ok: false,
-      message: 'Error en el envío'
+      message: 'Error procesando envío'
     });
   }
 });
