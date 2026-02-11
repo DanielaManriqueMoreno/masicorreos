@@ -1,31 +1,142 @@
 // Radicacion.jsx
 import "./Radicacion.css";
 
-function Radicacion({ onSelect, onVolver }) {
+function Radicacion({ onVolver }) {
+  const [plantillas, setPlantillas] = useState([]);
+  const [plantillaSeleccionada, setPlantillaSeleccionada] = useState(null);
+  const [plantillaEditando, setPlantillaEditando] = useState(null);
+  const [variables, setVariables] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const AREA_ID_RADICACION = 9; 
+
+  useEffect(() => {
+    const cargarPlantillas = async () => {
+      try {
+        const res = await axios.get("/api/templates", {
+          params: { area_id: AREA_ID_RADICACION }
+        });
+
+        console.log("Plantillas Radicacion:", res.data);
+        setPlantillas(res.data);
+      } catch (error) {
+        console.error("Error cargando plantillas de Radicacion", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    cargarPlantillas();
+  }, []);
+console.log("Plantilla seleccionada:", plantillaSeleccionada);
+console.log("Contenido render:",plantillaSeleccionada?.contenido);
+
   return (
-    <div className="radicacion-container">
-      <div className="btn-volver-container">
-        <button 
-          className="btn-volver"
-          onClick={onVolver}
-        >
-          ← Volver al Menú
-        </button>
-      </div>
-      
-      <h1 className="main-title">Sistema de Radicación</h1>
-      <p className="main-subtitle">Selecciona el tipo de operación de radicación</p>
-      
-      <div className="cards-wrapper">
-        <div className="card card-blue" onClick={() => onSelect("reenvio_facturas")}>
-          <div className="card-icon">📧</div>
-          <h3>Reenvío de facturas</h3>
-          <p>Reenvío y gestión de facturas electrónicas</p>
+    <div className="Radicacion-container">
+      <h1 className="main-title">Radicacion</h1>
+      <p className="main-subtitle">Plantillas disponibles</p>
+
+      {loading ? (
+        <p className="loading-state">Cargando plantillas...</p>
+      ) : plantillas.length === 0 ? (
+        <p className="empty-state">No hay plantillas registradas</p>
+      ) : (
+        <div className="plantillas-list">
+          {plantillas.map((p) => (
+            <div className="plantilla-card"
+              key={p.id}
+              onClick={() => setPlantillaSeleccionada({
+                  id: p.id,
+                  nombre: p.nom_plantilla,
+                  descripcion: p.descripcion,
+                  contenido: p.html_content
+                })
+              }
+            >
+              <div className="plantilla-info">
+                <h3 className="plantilla-nombre">
+                  {p.nom_plantilla || "Sin nombre"}
+                </h3>
+                <p className="plantilla-descripcion">
+                  {p.descripcion}
+                </p>
+              </div>
+
+              <div className="plantilla-action">
+                ➜
+              </div>
+            </div>
+          ))}
         </div>
-      </div>
+      )}
+
+      {plantillaSeleccionada && (
+        <ModalVistaPlantilla
+          plantilla={{
+            id: plantillaSeleccionada.id,
+            nom_plantilla: plantillaSeleccionada.nombre,
+            descripcion: plantillaSeleccionada.descripcion,
+            html_content: plantillaSeleccionada.contenido
+          }}
+          onClose={() => setPlantillaSeleccionada(null)}
+          onEditar={() => {
+            setPlantillaEditando(plantillaSeleccionada);
+            setPlantillaSeleccionada(null);
+          }}
+        />
+      )}
+
+      {plantillaEditando && (
+          <ModalEditarPlantilla
+            plantilla={plantillaEditando}
+            onClose={() => setPlantillaEditando(null)}
+            onSave={async (plantillaActualizada) => {
+              try {
+                const userId = getUserId();
+
+                if (!userId) {
+                  alert("No se pudo identificar el usuario");
+                  return;
+                }
+
+                const payload = {
+                  userId,
+                  descripcion: plantillaActualizada.descripcion,
+                  htmlContent: plantillaActualizada.contenido
+                };
+
+                await axios.put(
+                  `/api/templates/${plantillaActualizada.id}`,
+                  payload
+                );
+
+                //  actualizar lista en memoria
+                setPlantillas(prev =>
+                  prev.map(p =>
+                    p.id === plantillaActualizada.id
+                      ? {
+                          ...p,
+                          descripcion: plantillaActualizada.descripcion,
+                          html_content: plantillaActualizada.contenido
+                        }
+                      : p
+                  )
+                );
+
+                // cerrar modal
+                setPlantillaEditando(null);
+
+              } catch (error) {
+                console.error("Error guardando plantilla:", error);
+                alert("No se pudo guardar la plantilla");
+              }
+            }}
+          />
+        )}
     </div>
   );
 }
+
 
 export default Radicacion;
 
