@@ -18,7 +18,6 @@ function Interfaz1({ onSelect, onLogout, usuario }) {
 
   const renderVista = () => {
 
-    // 🔥 Si hay un área activa → SIEMPRE renderiza VistaArea
     if (areaActiva) {
       return (
         <VistaArea

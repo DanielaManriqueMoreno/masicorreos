@@ -55,14 +55,39 @@ export default function Sidebar({
       <div className="sidebar-divider" />
 
       <nav className="sidebar-menu">
-        <button
-          className="menu-item"
-          onClick={() => {
+        <button className="menu-item" onClick={() => {
+            setAreaActiva(null);
+            setVistaActual("crear-plantilla");
+          }}>
+           Crear Plantilla
+        </button>
+
+          <button className="menu-item" onClick={() => {
+            setAreaActiva(null);
+            setVistaActual("crear-usuario");
+          }}>
+          Crear Usuario
+        </button>
+
+          <button className="menu-item" onClick={() => {
+            setAreaActiva(null);
+            setVistaActual("envios");
+          }}>
+           Envíos
+        </button>
+
+        <button className="menu-item" onClick={() => {
+            setAreaActiva(null);
+            setVistaActual("ver-registros");
+          }}>
+           Ver Registros
+        </button>
+
+        <button className="menu-item" onClick={() => {
             setAreaActiva(null);
             setVistaActual("perfil");
-          }}
-        >
-          👤 Mi Perfil
+          }}>
+           Mi Perfil
         </button>
 
         <button className="btn-logout" onClick={onLogout}>
