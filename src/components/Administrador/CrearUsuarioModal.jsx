@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { crearUsuarioAdmin } from "../../api";
-import "./CrearUsuariosModal.css";
+import "./CrearUsuarioModal.css";
 
 export default function CrearUsuarioModal({ onClose, onCreado }) {
   const usuarioActual = JSON.parse(localStorage.getItem("usuarioLogueado"));

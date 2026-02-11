@@ -1,7 +1,5 @@
-// src/components/Layout/Sidebar.jsx
 import "./Sidebar.css";
 import { useEffect, useState } from "react";
-import axios from "axios";
 
 export default function Sidebar({
   usuario,
@@ -62,7 +60,14 @@ export default function Sidebar({
            Crear Plantilla
         </button>
 
-          <button className="menu-item" onClick={() => {
+        <button className="menu-item" onClick={() => {
+            setAreaActiva(null);
+            setVistaActual("areas");
+          }}>
+           Áreas
+        </button>
+
+        <button className="menu-item" onClick={() => {
             setAreaActiva(null);
             setVistaActual("crear-usuario");
           }}>

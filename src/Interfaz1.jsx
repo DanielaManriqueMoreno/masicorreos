@@ -6,6 +6,7 @@ import CrearPlantilla from "./components/Plantillas/CrearPlantilla";
 import VerRegistros from "./components/Registros/VerRegistros";
 import Usuarios from "./components/Administrador/Usuarios";
 import Envios from "./components/Envios/Envios";
+import Areas from "./components/Administrador/Areas";
 import Perfil from "./components/Perfil/Perfil";
 import RecuperarPassword from "./components/RecuperarPassword/RecuperarPassword";
 import Sidebar from "./components/Layout/Sidebar";
@@ -30,6 +31,9 @@ function Interfaz1({ onSelect, onLogout, usuario }) {
     switch (vistaActual) {
       case "crear-plantilla":
         return <CrearPlantilla usuario={usuario} />;
+      
+      case "areas":
+        return <Areas usuario={usuario}/>;
 
       case "ver-registros":
         return <VerRegistros usuario={usuario} />;

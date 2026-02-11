@@ -448,7 +448,7 @@ app.get('/api/auth/me', async (req, res) => {
 });
 
 //====================== ENDPOINST AREAS ====================
-// Obtener todas las áreas
+// Obtener las areas activas para asignar a los usuarios y para filtrar plantillas
 app.get('/api/areas', async (req, res) => {
   try {
     const [areas] = await pool.execute(
@@ -461,6 +461,73 @@ app.get('/api/areas', async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 });
+
+//Obtener todas las áreas (incluso inactivas) para administración
+app.get('/api/admin/areas', async (req, res) => {
+  try {
+    const [areas] = await pool.execute(
+      'SELECT id, nombre, estado FROM areas ORDER BY nombre'
+    );
+
+    res.json(areas);
+  } catch (error) {
+    console.error('Error cargando áreas admin:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+//Crear nueva área
+app.post('/api/admin/areas', async (req, res) => {
+  try {
+    const { nombre } = req.body;
+
+    if (!nombre) {
+      return res.status(400).json({
+        success: false,
+        message: "El nombre es obligatorio"
+      });
+    }
+
+    await pool.execute(
+      'INSERT INTO areas (nombre, estado) VALUES (?, "ACTIVO")',
+      [nombre]
+    );
+
+    res.json({ success: true, message: "Área creada correctamente" });
+
+  } catch (error) {
+    console.error("Error creando área:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+
+//Editar área
+app.put('/api/admin/areas/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { nombre, estado } = req.body;
+
+    if (!nombre || !estado) {
+      return res.status(400).json({
+        success: false,
+        message: "Nombre y estado son obligatorios"
+      });
+    }
+
+    await pool.execute(
+      'UPDATE areas SET nombre = ?, estado = ? WHERE id = ?',
+      [nombre, estado, id]
+    );
+
+    res.json({ success: true, message: "Área actualizada correctamente" });
+
+  } catch (error) {
+    console.error("Error actualizando área:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 
 // ==================== ENDPOINTS DE RECUPERACIÓN DE CONTRASEÑA ====================
 
