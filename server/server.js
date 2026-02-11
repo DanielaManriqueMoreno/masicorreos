@@ -1,4 +1,23 @@
 // server.js - Servidor Express
+import nodemailer from 'nodemailer';
+
+const transporter = nodemailer.createTransport({
+  service: 'gmail', 
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_PASS
+  }
+});
+
+const enviarCorreo = async ({ to, subject, html }) => {
+  await transporter.sendMail({
+    from: process.env.GMAIL_USER,
+    to,
+    subject,
+    html
+  });
+};
+
 import express from 'express';
 import fs from 'fs';
 import cors from 'cors';
@@ -643,21 +662,29 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
       let enviados = 0;
       let fallidos = 0;
 
-      for (const d of destinatarios) {
+      for (const row of rows) {
+        const email = row.Email;
+        const asunto = row.Asunto;
+        const mensaje = row.mensaje;
+
+        if (!email) continue;
+
         try {
-          console.log("Enviando a:", d.email);
+          console.log("Enviando a:", email);
+
           await enviarCorreo({
-            to: d.email,
-            from: fromEmail,
-            plantillaId,
-            variables: d.variables
+            to: email,
+            subject: asunto || 'Sin asunto',
+            html: `<p>${mensaje}</p>`
           });
-          enviados++;
-        } catch (e) {
-          fallidos++;
+
+          console.log("✅ Enviado correctamente");
+        } catch (err) {
+          console.error("❌ Error enviando:", err);
         }
       }
-
+      console.log("GMAIL_USER:", process.env.GMAIL_USER);
+      console.log("GMAIL_PASS:", process.env.GMAIL_PASS ? "OK" : "VACÍO");
       return res.json({
         ok: true,
         results: {
@@ -670,7 +697,7 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
     }
 
     // =========================
-    // 3️⃣ ENVÍO PROGRAMADO
+    //  ENVÍO PROGRAMADO
     // =========================
     if (modoEnvio === 'programado') {
       await pool.query(
