@@ -1,15 +1,26 @@
 import { useEffect, useState } from "react";
 import "./Areas.css";
 
-export default function Areas({ areas, setAreas, cargarAreas }) {
+export default function Areas() {
+  const [areas, setAreas] = useState([]);
   const [nuevaArea, setNuevaArea] = useState("");
   const [editando, setEditando] = useState(null);
   const [nombreEditado, setNombreEditado] = useState("");
   const [estadoEditado, setEstadoEditado] = useState("ACTIVO");
 
-  // 🔥 Usamos la función que viene desde Interfaz1
+  // 🔥 Carga SOLO para admin
+  const cargarAreasAdmin = async () => {
+    try {
+      const res = await fetch("http://localhost:3001/api/admin/areas");
+      const data = await res.json();
+      setAreas(data);
+    } catch (error) {
+      console.error("Error cargando áreas admin:", error);
+    }
+  };
+
   useEffect(() => {
-    cargarAreas();
+    cargarAreasAdmin();
   }, []);
 
   // Crear área
@@ -24,11 +35,9 @@ export default function Areas({ areas, setAreas, cargarAreas }) {
         }),
       });
 
-      const data = await res.json();
-
-      if (data.success) {
+      if (res.ok) {
         setNuevaArea("");
-        cargarAreas();
+        cargarAreasAdmin();
       }
     } catch (error) {
       console.error("Error creando área:", error);
@@ -51,14 +60,14 @@ export default function Areas({ areas, setAreas, cargarAreas }) {
 
     if (res.ok) {
       setEditando(null);
-      cargarAreas();
+      cargarAreasAdmin();
     }
   };
 
   // Eliminar área
   const eliminarArea = async (id) => {
     const confirmar = window.confirm(
-      "¿Estás seguro de eliminar esta área?"
+      "¿Estás segura de eliminar esta área?"
     );
     if (!confirmar) return;
 
@@ -69,14 +78,13 @@ export default function Areas({ areas, setAreas, cargarAreas }) {
       }
     );
 
-    cargarAreas();
+    cargarAreasAdmin();
   };
 
   return (
     <div className="areas-container">
       <h2>Gestión de Áreas</h2>
 
-      {/* Crear nueva área */}
       <div className="crear-area">
         <input
           type="text"
@@ -87,7 +95,6 @@ export default function Areas({ areas, setAreas, cargarAreas }) {
         <button onClick={crearArea}>Crear</button>
       </div>
 
-      {/* Tabla */}
       <div className="tabla-container">
         <table className="tabla-areas">
           <thead>
@@ -125,11 +132,8 @@ export default function Areas({ areas, setAreas, cargarAreas }) {
                     </td>
 
                     <td>
-                      <button
-                        className="btn-primary"
-                        onClick={() =>
-                          guardarEdicion(area.id)
-                        }
+                      <button className="btn-primary"
+                        onClick={() => guardarEdicion(area.id)}
                       >
                         Guardar
                       </button>
@@ -141,23 +145,17 @@ export default function Areas({ areas, setAreas, cargarAreas }) {
                     <td>{area.estado}</td>
                     <td>
                       <button
-                        className="btn-secondary"
                         onClick={() => {
                           setEditando(area.id);
                           setNombreEditado(area.nombre);
-                          setEstadoEditado(
-                            area.estado || "ACTIVO"
-                          );
+                          setEstadoEditado(area.estado);
                         }}
                       >
                         Editar
                       </button>
 
-                      <button
-                        className="btn-danger"
-                        onClick={() =>
-                          eliminarArea(area.id)
-                        }
+                      <button className="btn-danger"
+                        onClick={() => eliminarArea(area.id)}
                       >
                         Eliminar
                       </button>
