@@ -466,10 +466,11 @@ app.get('/api/areas', async (req, res) => {
 app.get('/api/admin/areas', async (req, res) => {
   try {
     const [areas] = await pool.execute(
-      'SELECT id, nombre, estado FROM areas ORDER BY nombre'
+      'SELECT * FROM areas ORDER BY nombre'
     );
 
     res.json(areas);
+    console.log("Áreas admin:", areas);
   } catch (error) {
     console.error('Error cargando áreas admin:', error);
     res.status(500).json({ success: false, message: error.message });
@@ -525,6 +526,23 @@ app.put('/api/admin/areas/:id', async (req, res) => {
   } catch (error) {
     console.error("Error actualizando área:", error);
     res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+//Eliminar Area
+app.delete('/api/admin/areas/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await pool.execute(
+      'DELETE FROM areas WHERE id = ?',
+      [id]
+    );
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Error eliminando área:", error);
+    res.status(500).json({ success: false });
   }
 });
 

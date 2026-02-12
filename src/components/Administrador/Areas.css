@@ -1,36 +1,162 @@
+/* ===== CONTENEDOR GENERAL ===== */
 .areas-container {
-  padding: 40px;
-  background: #f3f4f6;
+  padding: 48px;
+  background: #f9fafb;
   min-height: 100vh;
+  font-family: "Inter", sans-serif;
+  color: #111827;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
+.areas-container h2 {
+  width: 100%;
+  max-width: 1000px;
+  font-size: 26px;
+  font-weight: 600;
+  margin-bottom: 32px;
+}
+
+/* ===== CREAR AREA ===== */
 .crear-area {
+  width: 100%;
+  max-width: 1000px;
   display: flex;
-  gap: 12px;
+  gap: 16px;
   margin-bottom: 24px;
+  align-items: center;
 }
 
 .crear-area input {
-  padding: 8px 12px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
+  flex: 1;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  font-size: 14px;
+}
+
+.crear-area input:focus {
+  border-color: #2563eb;
+  outline: none;
 }
 
 .crear-area button {
-  background: #111827;
+  background: #2563eb;
   color: white;
   border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
+  padding: 12px 18px;
+  border-radius: 10px;
   cursor: pointer;
+  font-weight: 500;
+  transition: 0.2s ease;
 }
 
-.area-card {
-  background: white;
-  padding: 16px;
-  border-radius: 8px;
-  margin-bottom: 12px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.crear-area button:hover {
+  background: #1d4ed8;
 }
+
+/* ===== TABLA ===== */
+.tabla-container {
+  width: 100%;
+  max-width: 1000px;
+  background: white;
+  padding: 24px;
+  border-radius: 16px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+}
+
+.tabla-areas {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.tabla-areas thead {
+  background: #f9fafb;
+}
+
+.tabla-areas th {
+  text-align: left;
+  padding: 14px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.tabla-areas td {
+  padding: 14px;
+  border-top: 1px solid #f1f1f1;
+  color: #111827;
+}
+
+.tabla-areas td:last-child {
+  text-align: right;
+}
+
+.tabla-areas tbody tr:hover {
+  background: #f9fafb;
+}
+
+/* ===== INPUTS EN EDICIÓN ===== */
+.tabla-areas input,
+.tabla-areas select {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  font-size: 13px;
+}
+
+/* ===== BOTONES ===== */
+.btn-primary {
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: 0.2s ease;
+}
+
+.btn-primary:hover {
+  background: #1d4ed8;
+}
+
+.btn-secondary {
+  background: transparent;
+  border: 1px solid #d1d5db;
+  color: #374151;
+  padding: 6px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+.acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.btn-danger {
+  background: transparent;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 6px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: 0.2s ease;
+}
+
+.btn-danger:hover {
+  background: #fee2e2;
+}
+

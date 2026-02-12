@@ -7,23 +7,10 @@ export default function Sidebar({
   areaActiva,
   setVistaActual,
   setAreaActiva,
-  onLogout
+  onLogout,
+  areas
 }) {
-  const [areas, setAreas] = useState([]);
   const esAdmin = usuario?.rol === "ADMINISTRADOR";
-
-  useEffect(() => {
-    const cargarAreas = async () => {
-      try {
-        const res = await axios.get("/api/areas");
-        setAreas(res.data);
-      } catch (error) {
-        console.error("Error cargando áreas", error);
-      }
-    };
-
-    cargarAreas();
-  }, []);
 
   const puedeVerArea = (area) => {
     if (esAdmin) return true;
@@ -35,6 +22,11 @@ export default function Sidebar({
       <h2 className="sidebar-title">ÁREAS</h2>
 
       <nav className="sidebar-menu">
+        {areas
+          .filter(area => area.estado === "ACTIVO")
+          .map(area => (
+            <li key={area.id}>{area.nombre}</li>
+          ))}
         {areas.filter(puedeVerArea).map((area) => (
           <button
             key={area.id}

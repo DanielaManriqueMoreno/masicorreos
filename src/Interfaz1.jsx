@@ -1,6 +1,6 @@
 // src/Interfaz1.jsx
 import "./Interfaz1.css";
-import { useState } from "react";
+import { useState,useEffect } from "react";
 import VistaArea from "./components/Areas/VistaAreas";
 import CrearPlantilla from "./components/Plantillas/CrearPlantilla";
 import VerRegistros from "./components/Registros/VerRegistros";
@@ -14,11 +14,34 @@ import Sidebar from "./components/Layout/Sidebar";
 function Interfaz1({ onSelect, onLogout, usuario }) {
   const [vistaActual, setVistaActual] = useState("perfil");
   const [areaActiva, setAreaActiva] = useState(null);
+  const [areasAdmin, setAreasAdmin] = useState([]);
   const [mostrarRecuperarPassword, setMostrarRecuperarPassword] =
     useState(false);
+  const [areas, setAreas] = useState([]);
+  const cargarAreas = async () => {
+    try {
+      const res = await fetch("http://localhost:3001/api/areas");
+      const data = await res.json();
+      setAreas(data);
+    } catch (error) {
+      console.error("Error cargando áreas:", error);
+    }
+  };
+  useEffect(() => {
+    cargarAreas();
+  }, []);
+
+  useEffect(() => {
+    console.log("Áreas actualizadas en Interfaz1:", areas);
+  }, [areas]);
+  const cargarAreasAdmin = async () => {
+  const res = await fetch("http://localhost:3001/api/admin/areas");
+  const data = await res.json();
+  setAreasAdmin(data);
+};
+
 
   const renderVista = () => {
-
     if (areaActiva) {
       return (
         <VistaArea
@@ -33,7 +56,11 @@ function Interfaz1({ onSelect, onLogout, usuario }) {
         return <CrearPlantilla usuario={usuario} />;
       
       case "areas":
-        return <Areas usuario={usuario}/>;
+        return <Areas
+          usuario={usuario}
+          areas={areas}
+          setAreas={setAreas}
+          cargarAreas={cargarAreas}/>;
 
       case "ver-registros":
         return <VerRegistros usuario={usuario} />;
@@ -59,6 +86,7 @@ function Interfaz1({ onSelect, onLogout, usuario }) {
           setAreaActiva={setAreaActiva}
           setVistaActual={setVistaActual}
           onLogout={onLogout}
+          areas={areas}
         />
 
         <main className="main-content">{renderVista()}</main>
