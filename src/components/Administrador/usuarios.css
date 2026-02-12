@@ -21,17 +21,19 @@
 }
 
 .usuarios-header button {
-  background: #3498db;
+  background: #2563eb;
   color: #fff;
   border: none;
-  padding: 8px 14px;
+  padding: 5px 10px;
   border-radius: 6px;
-  font-size: 13px;
+  font-size: 12px;
   cursor: pointer;
+  width: auto; /* por si acaso */
 }
 
+
 .usuarios-header button:hover {
-  background: #2980b9;
+  background: #1d4ed8;
 }
 
 /* Tabla */
@@ -61,7 +63,7 @@
 }
 
 .usuarios-table button {
-  background: #97bdf5;
+  background: #3b82f6;
   color: white;
   border: none;
   padding: 6px 10px;
@@ -71,7 +73,7 @@
 }
 
 .usuarios-table button:hover {
-  background: #7f8c8d;
+  background:#2563eb;
 }
 
 /* Estados */

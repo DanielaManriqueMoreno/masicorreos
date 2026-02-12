@@ -1,23 +1,74 @@
 .envios-container {
   max-width: 500px;
-  margin: auto;
-  padding: 20px;
+  margin: 40px auto;
+  padding: 25px 30px;
+  background-color: #f9f9f9;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.envios-container h2 {
+  text-align: center;
+  margin-bottom: 25px;
+  color: #333;
+  font-size: 1.8rem;
 }
 
 .envios-container label {
   display: block;
   margin-top: 15px;
+  font-weight: 600;
+  color: #555;
 }
 
 .envios-container input,
 .envios-container select {
   width: 100%;
-  padding: 8px;
+  padding: 10px 12px;
   margin-top: 5px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+
+.envios-container input:focus,
+.envios-container select:focus {
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+  outline: none;
+}
+
+.envios-container .file-name {
+  margin-top: 8px;
+  font-size: 0.9rem;
+  color: #444;
+  background-color: #e6f0ff;
+  padding: 5px 10px;
+  border-radius: 6px;
+  display: inline-block;
 }
 
 .envios-container button {
-  margin-top: 20px;
-  padding: 10px;
+  margin-top: 25px;
+  padding: 12px;
   width: 100%;
+  border: none;
+  border-radius: 10px;
+  background-color: #4a90e2;
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.envios-container button:hover:not(:disabled) {
+  background-color: #357ab8;
+}
+
+.envios-container button:disabled {
+  background-color: #a0c4f2;
+  cursor: not-allowed;
 }

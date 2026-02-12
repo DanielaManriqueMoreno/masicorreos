@@ -26,14 +26,27 @@
 
 .perfil-card input {
   width: 100%;
-  padding: 9px;
+  padding: 10px;
   margin-top: 4px;
   border-radius: 8px;
   border: 1px solid #d1d5db;
+  background-color: #ffffff;  /* asegurar blanco */
+  color: #111827;             /* texto oscuro */
+  font-size: 14px;
+  transition: border-color 0.3s, box-shadow 0.3s;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.perfil-card input:focus {
+  outline: none;
+  border-color: #2563eb;               /* azul vivo */
+  box-shadow: 0 0 8px rgba(37, 99, 235, 0.2);
+  background-color: #ffffff;            /* mantener fondo blanco al foco */
 }
 
 .perfil-card input:disabled {
-  background: #f3f4f6;
+  background: #f3f4f6;                  /* gris suave solo para deshabilitados */
+  color: #9ca3af;
 }
 
 .perfil-opciones {
@@ -47,6 +60,23 @@ h4 {
 
 .checkbox {
   font-size: 14px;
+}
+
+/* Checkbox alineado verticalmente */
+.perfil-card .checkbox {
+  display: flex;
+  align-items: center;       /* centra verticalmente el checkbox con el texto */
+  gap: 6px;                  /* separación entre el checkbox y el texto */
+  font-size: 14px;
+  color: #374151;
+  margin-top: 10px;
+}
+
+.perfil-card .checkbox input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #2563eb;     /* color azul del check */
+  cursor: pointer;
 }
 
 .perfil-areas {
