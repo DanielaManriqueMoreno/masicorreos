@@ -33,18 +33,10 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, '.env') });
 
 // Ahora importar los demás módulos
-import pool, { testConnection, createUsersTable } from './database.js';
+import pool, { testConnection } from './database.js';
 import bcrypt from 'bcryptjs';
 import multer from 'multer';
 import crypto from 'crypto';
-import {
-  sendHtmlEmail,
-  renderCitasTemplate,
-  renderReprogramacionTemplate,
-  renderDengueTemplate,
-  renderCursosTemplate,
-  sendPasswordResetEmail
-} from './emailService.js';
 import cron from 'node-cron';
 
 const app = express();
@@ -697,209 +689,156 @@ app.post('/api/reset-password', async (req, res) => {
 
 // ==================== ENDPOINTS DE ENVÍO DE CORREOS ====================
 app.post('/api/envios', upload.single('archivo'), async (req, res) => {
-  try {
-    console.log('➡️ POST /api/envios');
+  const conn = await pool.getConnection();
 
+  try {
     if (!req.file) {
-      return res.status(400).json({
-        ok: false,
-        message: 'No se recibió archivo'
-      });
+      return res.status(400).json({ ok: false, message: 'No se recibió archivo' });
     }
 
-    console.log('Archivo recibido:', req.file);
+    const { plantillaId, modoEnvio, programadoPara } = req.body;
 
-    const {
-      plantillaId,
-      fromEmail,
-      modoEnvio,
-      programadoPara
-    } = req.body;
-
-    // =========================
-    // LEER EXCEL
-    // =========================
     const workbook = XLSX.readFile(req.file.path);
     const sheetName = workbook.SheetNames[0];
     const sheet = workbook.Sheets[sheetName];
-
     const rows = XLSX.utils.sheet_to_json(sheet);
 
     if (!rows.length) {
-      return res.status(400).json({
-        ok: false,
-        message: 'El Excel está vacío'
-      });
+      return res.status(400).json({ ok: false, message: 'El Excel está vacío' });
     }
 
-    console.log('Filas leídas:', rows);
+    await conn.beginTransaction();
 
-    // Convertimos filas en destinatarios
-    const destinatarios = rows.map(row => ({
-      email: row.Email || row.email,   
-      variables: row
-    }));
+    const tipo = modoEnvio === 'programado' ? 'PROGRAMADO' : 'INMEDIATO';
+    const estadoInicial = modoEnvio === 'programado' ? 'pendiente' : 'enviado';
 
-    // =========================
-    // ENVÍO INMEDIATO
-    // =========================
-    if (modoEnvio === 'inmediato') {
-      let enviados = 0;
-      let fallidos = 0;
+    const [envioResult] = await conn.execute(
+      `INSERT INTO envios (plantilla_id, tipo, estado, fecha_programada, fecha_envio)
+       VALUES (?, ?, ?, ?, ?)`,
+      [
+        plantillaId,
+        tipo,
+        estadoInicial,
+        modoEnvio === 'programado' ? programadoPara : null,
+        modoEnvio === 'inmediato' ? new Date() : null
+      ]
+    );
 
-      for (const row of rows) {
-        const email = row.Email;
-        const asunto = row.Asunto;
-        const mensaje = row.mensaje;
+    const envioId = envioResult.insertId;
 
-        if (!email) continue;
+    let enviados = 0;
+    let fallidos = 0;
 
+    for (const row of rows) {
+      const email = row.Email;
+      const asunto = row.Asunto;
+      const mensaje = row.mensaje;
+
+      if (!email) continue;
+
+      let estadoDest = 'pendiente';
+      let errorMsg = null;
+
+      if (modoEnvio === 'inmediato') {
         try {
-          console.log("Enviando a:", email);
-
           await enviarCorreo({
             to: email,
             subject: asunto || 'Sin asunto',
             html: `<p>${mensaje}</p>`
           });
 
-          console.log("✅ Enviado correctamente");
+          estadoDest = 'enviado';
+          enviados++;
+
         } catch (err) {
-          console.error("❌ Error enviando:", err);
+          estadoDest = 'fallido';
+          errorMsg = err.message;
+          fallidos++;
         }
       }
-      console.log("GMAIL_USER:", process.env.GMAIL_USER);
-      console.log("GMAIL_PASS:", process.env.GMAIL_PASS ? "OK" : "VACÍO");
-      return res.json({
-        ok: true,
-        results: {
-          total: destinatarios.length,
-          sent: enviados,
-          failed: fallidos,
-          scheduled: 0
-        }
-      });
-    }
 
-    // =========================
-    //  ENVÍO PROGRAMADO
-    // =========================
-    if (modoEnvio === 'programado') {
-      await pool.query(
-        `INSERT INTO envios_programados
-         (plantilla_id, from_email, programado_para, payload)
+      await conn.execute(
+        `INSERT INTO destinatarios_envio 
+         (envio_id, email, estado, error_mensaje)
          VALUES (?, ?, ?, ?)`,
-        [
-          plantillaId,
-          fromEmail,
-          programadoPara,
-          JSON.stringify(destinatarios)
-        ]
+        [envioId, email, estadoDest, errorMsg]
       );
-
-      return res.json({
-        ok: true,
-        results: {
-          total: destinatarios.length,
-          sent: 0,
-          failed: 0,
-          scheduled: destinatarios.length
-        }
-      });
     }
 
-    return res.status(400).json({
-      ok: false,
-      message: 'Modo de envío no válido'
+    await conn.commit();
+
+    res.json({
+      ok: true,
+      results: {
+        total: rows.length,
+        sent: enviados,
+        failed: fallidos,
+        scheduled: modoEnvio === 'programado' ? rows.length : 0
+      }
     });
 
   } catch (error) {
+    await conn.rollback();
     console.error(error);
-    res.status(500).json({
-      ok: false,
-      message: 'Error procesando envío'
-    });
+    res.status(500).json({ ok: false, message: 'Error procesando envío' });
+  } finally {
+    conn.release();
   }
 });
 
 // Procesar correos programados pendientes
 const processScheduledEmails = async () => {
   try {
-    // Buscar correos que ya deben enviarse (fecha programada <= ahora y status = PENDING)
-    const [pendingEmails] = await pool.execute(
-      `SELECT * FROM scheduled_emails 
-       WHERE status = 'PENDING' 
-       AND scheduled_datetime <= NOW() 
-       ORDER BY scheduled_datetime ASC 
-       LIMIT 50`
+    const [envios] = await pool.execute(
+      `SELECT * FROM envios
+       WHERE tipo = 'PROGRAMADO'
+       AND estado = 'pendiente'
+       AND fecha_programada <= NOW()`
     );
 
-    if (pendingEmails.length === 0) {
-      return; // No hay correos pendientes
-    }
+    for (const envio of envios) {
 
-    console.log(`⏰ [SCHEDULER] Procesando ${pendingEmails.length} correo(s) programado(s)...`);
+      const [destinatarios] = await pool.execute(
+        `SELECT * FROM destinatarios_envio
+         WHERE envio_id = ? AND estado = 'pendiente'`,
+        [envio.id]
+      );
 
-    for (const email of pendingEmails) {
-      try {
-        // Marcar como "EN_PROCESO" para evitar duplicados
-        await pool.execute(
-          'UPDATE scheduled_emails SET status = ? WHERE id = ?',
-          ['EN_PROCESO', email.id]
-        );
+      for (const dest of destinatarios) {
+        try {
+          await enviarCorreo({
+            to: dest.email,
+            subject: 'Correo programado',
+            html: '<p>Contenido programado</p>'
+          });
 
-        // Enviar el correo - usar credenciales guardadas si están disponibles
-        const fromEmail = email.from_email || null;
-        const fromPassword = email.from_password || null;
-        await sendHtmlEmail(email.recipient_email, email.subject, email.html_content, [], fromEmail, fromPassword);
+          await pool.execute(
+            `UPDATE destinatarios_envio 
+             SET estado = 'enviado' 
+             WHERE id = ?`,
+            [dest.id]
+          );
 
-        // Marcar como enviado
-        await pool.execute(
-          'UPDATE scheduled_emails SET status = ?, sent_datetime = NOW() WHERE id = ?',
-          ['ENVIADO', email.id]
-        );
-
-        // Registrar en email_logs
-        await logEmail(
-          email.user_id,
-          email.recipient_email,
-          email.patient_name,
-          email.appointment_date,
-          email.subject,
-          'ENVIADO_PROGRAMADO'
-        );
-
-        console.log(`✅ [SCHEDULER] Correo enviado a: ${email.recipient_email}`);
-
-        // Pausa de 1 segundo entre correos para no saturar
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-      } catch (sendError) {
-        console.error(`❌ [SCHEDULER] Error enviando a ${email.recipient_email}:`, sendError.message);
-        
-        // Marcar como fallido
-        await pool.execute(
-          'UPDATE scheduled_emails SET status = ?, error_message = ? WHERE id = ?',
-          ['FALLIDO', sendError.message, email.id]
-        );
-
-        // Registrar error en email_logs
-        await logEmail(
-          email.user_id,
-          email.recipient_email,
-          email.patient_name,
-          email.appointment_date,
-          email.subject,
-          'ERROR_PROGRAMADO',
-          sendError.message
-        );
+        } catch (err) {
+          await pool.execute(
+            `UPDATE destinatarios_envio 
+             SET estado = 'fallido', error_mensaje = ?
+             WHERE id = ?`,
+            [err.message, dest.id]
+          );
+        }
       }
-    }
 
-    console.log(`⏰ [SCHEDULER] Procesamiento completado.`);
+      await pool.execute(
+        `UPDATE envios 
+         SET estado = 'enviado', fecha_envio = NOW()
+         WHERE id = ?`,
+        [envio.id]
+      );
+    }
 
   } catch (error) {
-    console.error('❌ [SCHEDULER] Error en processScheduledEmails:', error.message);
+    console.error('Error en scheduler:', error);
   }
 };
 
@@ -1210,60 +1149,23 @@ const startServer = async () => {
   try {
     console.log('🔍 Verificando conexión a MySQL...');
     
-    // PRIMERO: Verificar conexión a MySQL (OBLIGATORIO)
     const connected = await testConnection();
     
     if (!connected) {
-      console.error('');
-      console.error('❌ ============================================');
-      console.error('❌ ERROR: No se pudo conectar a MySQL');
-      console.error('❌ ============================================');
-      console.error('');
-      console.error('El servidor NO se iniciará sin conexión a MySQL.');
-      console.error('');
-      console.error('Para solucionarlo:');
-      console.error('1. Verifica que MySQL esté instalado y corriendo');
-      console.error('2. Revisa el archivo .env en la carpeta server/');
-      console.error('3. Asegúrate de que las credenciales sean correctas:');
-      console.error('   - DB_HOST=localhost');
-      console.error('   - DB_USER=root (o tu usuario)');
-      console.error('   - DB_PASSWORD=tu_contraseña_mysql');
-      console.error('   - DB_NAME=masicorreos_db');
-      console.error('   - DB_PORT=3306');
-      console.error('');
+      console.error('❌ No se pudo conectar a MySQL');
       process.exit(1);
     }
-    
-    // SEGUNDO: Crear tabla si no existe
-    console.log('🔍 Verificando tabla de usuarios...');
-    await createUsersTable();
-    
-    // TERCERO: Iniciar servidor HTTP (solo si MySQL está conectado)
+
     app.listen(PORT, () => {
-      console.log('');
-      console.log('✅ ============================================');
-      console.log('✅ SERVIDOR INICIADO CORRECTAMENTE');
-      console.log('✅ ============================================');
-      console.log(`✅ Servidor corriendo en http://localhost:${PORT}`);
-      console.log(`✅ API disponible en http://localhost:${PORT}/api`);
-      console.log('✅ MySQL conectado y funcionando');
-      console.log('✅ Base de datos lista para guardar datos');
-      console.log('');
+      console.log('✅ Servidor iniciado correctamente');
+      console.log(`http://localhost:${PORT}`);
       
-      // CUARTO: Iniciar scheduler de correos programados
       startScheduler();
-      console.log('');
     });
 
   } catch (error) {
-    console.error('');
-    console.error('❌ ============================================');
     console.error('❌ ERROR INICIANDO SERVIDOR');
-    console.error('❌ ============================================');
-    console.error('Error:', error.message);
-    console.error('');
-    console.error('Detalles:', error);
-    console.error('');
+    console.error(error);
     process.exit(1);
   }
 };
