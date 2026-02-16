@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 16-02-2026 a las 01:28:04
+-- Tiempo de generación: 16-02-2026 a las 17:46:30
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -246,6 +246,31 @@ INSERT INTO `plantillas` (`id`, `user_id`, `nom_plantilla`, `descripcion`, `html
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `remitentes`
+--
+
+CREATE TABLE `remitentes` (
+  `id` int(11) NOT NULL,
+  `nombre` varchar(100) NOT NULL,
+  `correo` varchar(150) NOT NULL,
+  `smtp_host` varchar(150) NOT NULL,
+  `smtp_port` int(11) NOT NULL,
+  `secure` tinyint(1) NOT NULL,
+  `password_app` varchar(255) NOT NULL,
+  `estado` enum('activo','inactivo') DEFAULT 'activo',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `remitentes`
+--
+
+INSERT INTO `remitentes` (`id`, `nombre`, `correo`, `smtp_host`, `smtp_port`, `secure`, `password_app`, `estado`, `created_at`) VALUES
+(1, 'Micita Oficial', 'micita@umit.com.co', 'smtp.gmail.com', 465, 1, 'fndyutjqejrndxth', 'activo', '2026-02-16 16:33:27');
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `usuarios`
 --
 
@@ -346,6 +371,12 @@ ALTER TABLE `plantillas`
   ADD KEY `plantilla_usuario` (`user_id`);
 
 --
+-- Indices de la tabla `remitentes`
+--
+ALTER TABLE `remitentes`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Indices de la tabla `usuarios`
 --
 ALTER TABLE `usuarios`
@@ -405,6 +436,12 @@ ALTER TABLE `errores_envio`
 --
 ALTER TABLE `plantillas`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+
+--
+-- AUTO_INCREMENT de la tabla `remitentes`
+--
+ALTER TABLE `remitentes`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- Restricciones para tablas volcadas

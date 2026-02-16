@@ -12,6 +12,10 @@ export default function Envios() {
     setModoEnvio,
     setFechaProgramada,
 
+    remitentes,
+    remitenteId,
+    setRemitenteId,
+
     handleArchivo,
     enviarCorreos
   } = useEnvios();
@@ -28,6 +32,17 @@ export default function Envios() {
       >
         <option value="inmediato">Enviar ahora</option>
         <option value="programado">Programado</option>
+      </select>
+
+      {/* REMITENTE */}
+      <label>Remitente</label>
+      <select value={remitenteId}
+        onChange={(e) => setRemitenteId(e.target.value)}>
+        {remitentes.map(rem => (
+          <option key={rem.id} value={rem.id}>
+            {rem.nombre} - {rem.correo}
+          </option>
+        ))}
       </select>
 
       {/* FECHA PROGRAMADA */}

@@ -1,19 +1,41 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function useEnvios() {
+
   // ---------------- ESTADOS ----------------
   const [archivo, setArchivo] = useState(null);
   const [fileName, setFileName] = useState('');
 
-  const [modoEnvio, setModoEnvio] = useState('inmediato'); // inmediato | programado
+  const [modoEnvio, setModoEnvio] = useState('inmediato');
   const [fechaProgramada, setFechaProgramada] = useState('');
 
-  const [correoRemitenteEnvio, setCorreoRemitenteEnvio] =
-    useState('micita@umit.com.co');
+  const [remitentes, setRemitentes] = useState([]);
+  const [remitenteId, setRemitenteId] = useState('');
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [results, setResults] = useState(null);
+
+  // ---------------- CARGAR REMITENTES ----------------
+  useEffect(() => {
+    const cargarRemitentes = async () => {
+      try {
+        const res = await fetch('http://localhost:3001/api/remitentes');
+        const data = await res.json();
+
+        setRemitentes(data);
+
+        if (data.length > 0) {
+          setRemitenteId(data[0].id); // selecciona el primero
+        }
+
+      } catch (error) {
+        console.error("Error cargando remitentes:", error);
+      }
+    };
+
+    cargarRemitentes();
+  }, []);
 
   // ---------------- ARCHIVO ----------------
   const handleArchivo = (e) => {
@@ -36,6 +58,11 @@ export default function useEnvios() {
       return;
     }
 
+    if (!remitenteId) {
+      alert('Debe seleccionar un remitente');
+      return;
+    }
+
     if (modoEnvio === 'programado' && !fechaProgramada) {
       alert('Debe seleccionar una fecha');
       return;
@@ -45,7 +72,7 @@ export default function useEnvios() {
     formData.append('archivo', archivo);
     formData.append('modoEnvio', modoEnvio);
     formData.append('programadoPara', fechaProgramada || '');
-    formData.append('fromEmail', correoRemitenteEnvio);
+    formData.append('remitenteId', remitenteId); // 🔥 CAMBIO CLAVE
     formData.append('preview', preview);
 
     try {
@@ -79,22 +106,22 @@ export default function useEnvios() {
 
   // ---------------- EXPORT ----------------
   return {
-    // estados
     archivo,
     fileName,
     modoEnvio,
     fechaProgramada,
-    correoRemitenteEnvio,
+
+    remitentes,
+    remitenteId,
+
     isProcessing,
     progress,
     results,
 
-    // setters
     setModoEnvio,
     setFechaProgramada,
-    setCorreoRemitenteEnvio,
+    setRemitenteId,
 
-    // handlers
     handleArchivo,
     enviarCorreos
   };

@@ -1,17 +1,31 @@
 // server.js - Servidor Express
 import nodemailer from 'nodemailer';
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail', 
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_PASS
-  }
-});
+const enviarCorreo = async ({ remitenteId, to, subject, html }) => {
 
-const enviarCorreo = async ({ to, subject, html }) => {
+  const [rows] = await pool.execute(
+    "SELECT * FROM remitentes WHERE id = ? AND estado = 'ACTIVO'",
+    [remitenteId]
+  );
+
+  if (!rows.length) {
+    throw new Error("Remitente no encontrado o inactivo");
+  }
+
+  const remitente = rows[0];
+
+  const transporter = nodemailer.createTransport({
+    host: remitente.smtp_host,
+    port: remitente.smtp_port,
+    secure: !!remitente.secure,
+    auth: {
+      user: remitente.correo,
+      pass: remitente.password_app
+    }
+  });
+
   await transporter.sendMail({
-    from: process.env.GMAIL_USER,
+    from: `"${remitente.nombre}" <${remitente.correo}>`,
     to,
     subject,
     html
@@ -696,8 +710,14 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
       return res.status(400).json({ ok: false, message: 'No se recibió archivo' });
     }
 
-    const { plantillaId, modoEnvio, programadoPara } = req.body;
-
+    const { plantillaId, modoEnvio, programadoPara, remitenteId } = req.body;
+    if (!remitenteId) {
+      return res.status(400).json({
+        ok: false,
+        message: 'Debe seleccionar un remitente'
+      });
+    }
+    
     const workbook = XLSX.readFile(req.file.path);
     const sheetName = workbook.SheetNames[0];
     const sheet = workbook.Sheets[sheetName];
@@ -713,10 +733,11 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
     const estadoInicial = modoEnvio === 'programado' ? 'pendiente' : 'enviado';
 
     const [envioResult] = await conn.execute(
-      `INSERT INTO envios (plantilla_id, tipo, estado, fecha_programada, fecha_envio)
-       VALUES (?, ?, ?, ?, ?)`,
+      `INSERT INTO envios (plantilla_id, remitente_id, tipo, estado, fecha_programada, fecha_envio)
+       VALUES (?, ?, ?, ?, ?, ?)`,
       [
         plantillaId,
+        remitenteId,
         tipo,
         estadoInicial,
         modoEnvio === 'programado' ? programadoPara : null,
@@ -742,6 +763,7 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
       if (modoEnvio === 'inmediato') {
         try {
           await enviarCorreo({
+            remitenteId,
             to: email,
             subject: asunto || 'Sin asunto',
             html: `<p>${mensaje}</p>`
@@ -756,7 +778,7 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
           fallidos++;
         }
       }
-
+      console.log("BODY RECIBIDO:", req.body);
       await conn.execute(
         `INSERT INTO destinatarios_envio 
          (envio_id, email, estado, error_mensaje)
@@ -807,6 +829,7 @@ const processScheduledEmails = async () => {
       for (const dest of destinatarios) {
         try {
           await enviarCorreo({
+            remitenteId: envio.remitente_id,
             to: dest.email,
             subject: 'Correo programado',
             html: '<p>Contenido programado</p>'
@@ -841,6 +864,26 @@ const processScheduledEmails = async () => {
     console.error('Error en scheduler:', error);
   }
 };
+
+// =============== REMITENTES ==================
+// OBTENER REMITENTES ACTIVOS
+app.get('/api/remitentes', async (req, res) => {
+  try {
+    const [rows] = await pool.execute(
+      "SELECT id, nombre, correo FROM remitentes WHERE estado = 'ACTIVO'"
+    );
+
+    res.json(rows);
+
+  } catch (error) {
+    console.error("Error obteniendo remitentes:", error);
+    res.status(500).json({
+      ok: false,
+      message: "Error obteniendo remitentes"
+    });
+  }
+});
+
 
 // Iniciar el scheduler (se ejecuta cada minuto)
 const startScheduler = () => {
@@ -1123,14 +1166,6 @@ app.get('/api/registros/actividad', async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 });
-
-// Obtener correos fallidos 
-
-
-// Obtener correos programados
-
-
-// Cancelar un correo programado
 
 
 // Reprogramar un correo (cambiar fecha/hora)
