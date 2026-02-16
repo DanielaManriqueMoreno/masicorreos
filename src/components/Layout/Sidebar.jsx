@@ -21,7 +21,7 @@ export default function Sidebar({
     <aside className="sidebar">
       <h2 className="sidebar-title">ÁREAS</h2>
 
-      <nav className="sidebar-menu">
+      <nav className="sidebar-menu sidebar-areas">
         {areas
           .filter(area => area.estado === "ACTIVO")
           .map(area => (

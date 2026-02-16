@@ -6,6 +6,7 @@
   padding: 15px;
   display: flex;
   flex-direction: column;
+  height: 100vh; 
 }
 
 .sidebar-title {
@@ -22,6 +23,11 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+.sidebar-areas {
+  flex: 1;            /* Ocupa el espacio disponible */
+  overflow-y: auto;   /* Scroll solo aquí */
 }
 
 .sidebar-footer {
