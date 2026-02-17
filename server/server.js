@@ -1,11 +1,11 @@
 // server.js - Servidor Express
 import nodemailer from 'nodemailer';
 
-const enviarCorreo = async ({ remitenteId, to, subject, html }) => {
+const enviarCorreo = async ({ remitente_id, to, subject, html }) => {
 
   const [rows] = await pool.execute(
     "SELECT * FROM remitentes WHERE id = ? AND estado = 'ACTIVO'",
-    [remitenteId]
+    [remitente_id]
   );
 
   if (!rows.length) {
@@ -706,56 +706,136 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
   const conn = await pool.getConnection();
 
   try {
-    if (!req.file) {
-      return res.status(400).json({ ok: false, message: 'No se recibió archivo' });
-    }
-
-    const { plantillaId, modoEnvio, programadoPara, remitenteId } = req.body;
-    if (!remitenteId) {
-      return res.status(400).json({
+    // 🔐 Usuario autenticado obligatorio
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
         ok: false,
-        message: 'Debe seleccionar un remitente'
+        message: 'No autorizado'
       });
     }
-    
-    const workbook = XLSX.readFile(req.file.path);
-    const sheetName = workbook.SheetNames[0];
-    const sheet = workbook.Sheets[sheetName];
-    const rows = XLSX.utils.sheet_to_json(sheet);
 
-    if (!rows.length) {
-      return res.status(400).json({ ok: false, message: 'El Excel está vacío' });
+    const usuarioId = req.user.id;
+
+    if (!req.file) {
+      return res.status(400).json({
+        ok: false,
+        message: 'Debe subir un archivo Excel'
+      });
+    }
+
+    const {
+      plantilla_id,
+      remitente_id,
+      modoEnvio,
+      programadoPara
+    } = req.body;
+
+    // 🧪 Validaciones básicas
+    if (!plantilla_id || !remitente_id) {
+      return res.status(400).json({
+        ok: false,
+        message: 'Debe seleccionar plantilla y remitente'
+      });
+    }
+
+    if (modoEnvio === 'programado' && !programadoPara) {
+      return res.status(400).json({
+        ok: false,
+        message: 'Debe indicar fecha programada'
+      });
     }
 
     await conn.beginTransaction();
 
+    // 🔐 VALIDACIÓN REAL DE ACCESO POR ÁREA
+    const [plantillaRows] = await conn.execute(
+      `
+      SELECT p.id, p.asunto, p.cuerpo_html
+      FROM plantillas p
+      INNER JOIN usuario_areas ua ON ua.area_id = p.area_id
+      WHERE p.id = ?
+      AND ua.usuario_id = ?
+      AND p.estado = 'ACTIVA'
+      `,
+      [plantilla_id, usuarioId]
+    );
+
+    if (!plantillaRows.length) {
+      await conn.rollback();
+      return res.status(403).json({
+        ok: false,
+        message: 'No tiene acceso a esta plantilla'
+      });
+    }
+
+    const plantilla = plantillaRows[0];
+
+    // 🔐 Validar que el remitente esté activo
+    const [remitenteRows] = await conn.execute(
+      `SELECT id FROM remitentes WHERE id = ? AND estado = 'ACTIVO'`,
+      [remitente_id]
+    );
+
+    if (!remitenteRows.length) {
+      await conn.rollback();
+      return res.status(400).json({
+        ok: false,
+        message: 'Remitente inválido o inactivo'
+      });
+    }
+
+    // 📝 Crear registro del envío
     const tipo = modoEnvio === 'programado' ? 'PROGRAMADO' : 'INMEDIATO';
-    const estadoInicial = modoEnvio === 'programado' ? 'pendiente' : 'enviado';
+    const estadoInicial = modoEnvio === 'programado' ? 'pendiente' : 'procesando';
 
     const [envioResult] = await conn.execute(
-      `INSERT INTO envios (plantilla_id, remitente_id, tipo, estado, fecha_programada, fecha_envio)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+      `
+      INSERT INTO envios
+      (plantilla_id, remitente_id, tipo, estado, fecha_programada, fecha_envio, creado_por)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+      `,
       [
-        plantillaId,
-        remitenteId,
+        plantilla_id,
+        remitente_id,
         tipo,
         estadoInicial,
         modoEnvio === 'programado' ? programadoPara : null,
-        modoEnvio === 'inmediato' ? new Date() : null
+        modoEnvio === 'inmediato' ? new Date() : null,
+        usuarioId
       ]
     );
 
     const envioId = envioResult.insertId;
 
+    // 📂 Leer Excel
+    const workbook = XLSX.readFile(req.file.path);
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(sheet);
+
+    if (!rows.length) {
+      await conn.rollback();
+      return res.status(400).json({
+        ok: false,
+        message: 'El archivo Excel está vacío'
+      });
+    }
+
     let enviados = 0;
     let fallidos = 0;
 
     for (const row of rows) {
-      const email = row.Email;
-      const asunto = row.Asunto;
-      const mensaje = row.mensaje;
-
+      const email = row.Email || row.email;
       if (!email) continue;
+
+      let htmlFinal = plantilla.cuerpo_html;
+      let asuntoFinal = plantilla.asunto;
+
+      // 🔁 Reemplazo dinámico seguro
+      for (const key in row) {
+        const value = row[key] ?? '';
+        htmlFinal = htmlFinal.replaceAll(`{{${key}}}`, value);
+        asuntoFinal = asuntoFinal.replaceAll(`{{${key}}}`, value);
+      }
 
       let estadoDest = 'pendiente';
       let errorMsg = null;
@@ -763,10 +843,10 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
       if (modoEnvio === 'inmediato') {
         try {
           await enviarCorreo({
-            remitenteId,
+            remitenteId: remitente_id,
             to: email,
-            subject: asunto || 'Sin asunto',
-            html: `<p>${mensaje}</p>`
+            subject: asuntoFinal,
+            html: htmlFinal
           });
 
           estadoDest = 'enviado';
@@ -778,14 +858,25 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
           fallidos++;
         }
       }
-      console.log("BODY RECIBIDO:", req.body);
+
       await conn.execute(
-        `INSERT INTO destinatarios_envio 
-         (envio_id, email, estado, error_mensaje)
-         VALUES (?, ?, ?, ?)`,
+        `
+        INSERT INTO destinatarios_envio
+        (envio_id, email, estado, error_mensaje)
+        VALUES (?, ?, ?, ?)
+        `,
         [envioId, email, estadoDest, errorMsg]
       );
     }
+
+    // 📌 Estado final
+    await conn.execute(
+      `UPDATE envios SET estado = ? WHERE id = ?`,
+      [
+        modoEnvio === 'inmediato' ? 'finalizado' : 'pendiente',
+        envioId
+      ]
+    );
 
     await conn.commit();
 
@@ -793,16 +884,20 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
       ok: true,
       results: {
         total: rows.length,
-        sent: enviados,
-        failed: fallidos,
-        scheduled: modoEnvio === 'programado' ? rows.length : 0
+        enviados,
+        fallidos,
+        programados: modoEnvio === 'programado' ? rows.length : 0
       }
     });
 
   } catch (error) {
     await conn.rollback();
-    console.error(error);
-    res.status(500).json({ ok: false, message: 'Error procesando envío' });
+    console.error('Error en /api/envios:', error);
+
+    res.status(500).json({
+      ok: false,
+      message: 'Error procesando envío'
+    });
   } finally {
     conn.release();
   }
@@ -829,7 +924,7 @@ const processScheduledEmails = async () => {
       for (const dest of destinatarios) {
         try {
           await enviarCorreo({
-            remitenteId: envio.remitente_id,
+            remitente_id: envio.remitente_id,
             to: dest.email,
             subject: 'Correo programado',
             html: '<p>Contenido programado</p>'
@@ -1133,6 +1228,33 @@ app.get('/api/templates/:id/download-excel', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error generando el archivo Excel'
+    });
+  }
+});
+
+// Plantillas disponibles para ususario por area
+app.get('/api/plantillas-disponibles', async (req, res) => {
+  try {
+    const usuarioId = req.user?.id || 1; // ⚠️ temporal si no tienes auth
+
+    const [rows] = await pool.execute(
+      `
+      SELECT p.id, p.nombre, p.asunto
+      FROM plantillas p
+      INNER JOIN usuario_areas ua ON ua.area_id = p.area_id
+      WHERE ua.usuario_id = ?
+      AND p.estado = 'ACTIVA'
+      `,
+      [usuarioId]
+    );
+
+    res.json(rows);
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      ok: false,
+      message: 'Error obteniendo plantillas'
     });
   }
 });

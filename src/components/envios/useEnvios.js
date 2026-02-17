@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 
 export default function useEnvios() {
-
+  
   // ---------------- ESTADOS ----------------
   const [archivo, setArchivo] = useState(null);
   const [fileName, setFileName] = useState('');
@@ -10,7 +10,7 @@ export default function useEnvios() {
   const [fechaProgramada, setFechaProgramada] = useState('');
 
   const [remitentes, setRemitentes] = useState([]);
-  const [remitenteId, setRemitenteId] = useState('');
+  const [remitente_id, setRemitente_id] = useState('');
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -26,7 +26,7 @@ export default function useEnvios() {
         setRemitentes(data);
 
         if (data.length > 0) {
-          setRemitenteId(data[0].id); // selecciona el primero
+          setRemitente_id(data[0].id); // selecciona el primero
         }
 
       } catch (error) {
@@ -58,7 +58,7 @@ export default function useEnvios() {
       return;
     }
 
-    if (!remitenteId) {
+    if (!remitente_id) {
       alert('Debe seleccionar un remitente');
       return;
     }
@@ -72,7 +72,7 @@ export default function useEnvios() {
     formData.append('archivo', archivo);
     formData.append('modoEnvio', modoEnvio);
     formData.append('programadoPara', fechaProgramada || '');
-    formData.append('remitenteId', remitenteId); // 🔥 CAMBIO CLAVE
+    formData.append('remitente_id', remitente_id); 
     formData.append('preview', preview);
 
     try {
@@ -112,7 +112,7 @@ export default function useEnvios() {
     fechaProgramada,
 
     remitentes,
-    remitenteId,
+    remitente_id,
 
     isProcessing,
     progress,
@@ -120,7 +120,7 @@ export default function useEnvios() {
 
     setModoEnvio,
     setFechaProgramada,
-    setRemitenteId,
+    setRemitente_id,
 
     handleArchivo,
     enviarCorreos
