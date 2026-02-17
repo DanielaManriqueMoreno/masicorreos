@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 
-export default function useEnvios() {
-  
-  // ---------------- ESTADOS ----------------
+export default function useEnvios(user) {
+
   const [archivo, setArchivo] = useState(null);
   const [fileName, setFileName] = useState('');
 
@@ -12,89 +11,73 @@ export default function useEnvios() {
   const [remitentes, setRemitentes] = useState([]);
   const [remitente_id, setRemitente_id] = useState('');
 
+  const [plantillas, setPlantillas] = useState([]);
+  const [plantilla_id, setPlantilla_id] = useState('');
+
   const [isProcessing, setIsProcessing] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [results, setResults] = useState(null);
 
-  // ---------------- CARGAR REMITENTES ----------------
   useEffect(() => {
-    const cargarRemitentes = async () => {
+    if (!user?.documento) return;
+
+    const cargarDatos = async () => {
       try {
-        const res = await fetch('http://localhost:3001/api/remitentes');
-        const data = await res.json();
+        const resPlantillas = await fetch(
+          `http://localhost:3001/api/plantillas-disponibles?documento=${user.documento}`
+        );
+        setPlantillas(await resPlantillas.json());
 
-        setRemitentes(data);
-
-        if (data.length > 0) {
-          setRemitente_id(data[0].id); // selecciona el primero
-        }
+        const resRemitentes = await fetch(
+          `http://localhost:3001/api/remitentes?documento=${user.documento}`
+        );
+        setRemitentes(await resRemitentes.json());
 
       } catch (error) {
-        console.error("Error cargando remitentes:", error);
+        console.error(error);
       }
     };
 
-    cargarRemitentes();
-  }, []);
+    cargarDatos();
 
-  // ---------------- ARCHIVO ----------------
+  }, [user?.documento]);
+
   const handleArchivo = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     if (!file.name.endsWith('.xlsx')) {
       alert('Solo se permiten archivos Excel (.xlsx)');
       return;
     }
-
     setArchivo(file);
     setFileName(file.name);
   };
 
-  // ---------------- ENVÍO ----------------
   const enviarCorreos = async ({ preview = false }) => {
-    if (!archivo) {
-      alert('Debe cargar un archivo');
-      return;
-    }
 
-    if (!remitente_id) {
-      alert('Debe seleccionar un remitente');
-      return;
-    }
-
-    if (modoEnvio === 'programado' && !fechaProgramada) {
-      alert('Debe seleccionar una fecha');
-      return;
-    }
+    if (!archivo) return alert('Debe cargar un archivo');
+    if (!remitente_id) return alert('Debe seleccionar un remitente');
+    if (!plantilla_id) return alert('Debe seleccionar una plantilla');
+    if (modoEnvio === 'programado' && !fechaProgramada)
+      return alert('Debe seleccionar una fecha');
 
     const formData = new FormData();
     formData.append('archivo', archivo);
     formData.append('modoEnvio', modoEnvio);
     formData.append('programadoPara', fechaProgramada || '');
-    formData.append('remitente_id', remitente_id); 
+    formData.append('remitente_id', remitente_id);
+    formData.append('plantilla_id', plantilla_id);
+    formData.append('documento', user.documento);
     formData.append('preview', preview);
 
     try {
       setIsProcessing(true);
-      setProgress(20);
 
-      const res = await fetch('/api/envios', {
+      const res = await fetch('http://localhost:3001/api/envios', {
         method: 'POST',
         body: formData
       });
 
-      setProgress(70);
-
       const data = await res.json();
-
-      if (!data.ok) {
-        alert(data.message || 'Error en el envío');
-        return;
-      }
-
-      setResults(data.results);
-      setProgress(100);
+      if (!data.ok) alert(data.message || 'Error en el envío');
 
     } catch (error) {
       console.error(error);
@@ -104,24 +87,20 @@ export default function useEnvios() {
     }
   };
 
-  // ---------------- EXPORT ----------------
   return {
     archivo,
     fileName,
     modoEnvio,
     fechaProgramada,
-
     remitentes,
     remitente_id,
-
+    plantillas,
+    plantilla_id,
     isProcessing,
-    progress,
-    results,
-
     setModoEnvio,
     setFechaProgramada,
     setRemitente_id,
-
+    setPlantilla_id,
     handleArchivo,
     enviarCorreos
   };

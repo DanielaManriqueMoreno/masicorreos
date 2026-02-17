@@ -66,7 +66,9 @@ function Interfaz1({ onSelect, onLogout, usuario }) {
         return <VerRegistros usuario={usuario} />;
 
       case "envios":
-        return <Envios onSelect={onSelect} />;
+        return <Envios 
+          user={usuario}
+          onSelect={onSelect} />;
 
       case "crear-usuario":
         return <Usuarios />;

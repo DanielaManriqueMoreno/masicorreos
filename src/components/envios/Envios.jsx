@@ -1,7 +1,8 @@
 import useEnvios from './useEnvios';
 import './Envios.css';
 
-export default function Envios() {
+export default function Envios({ user }) {
+
   const {
     archivo,
     fileName,
@@ -16,15 +17,18 @@ export default function Envios() {
     remitente_id,
     setRemitente_id,
 
+    plantillas,
+    plantilla_id,
+    setPlantilla_id,
+
     handleArchivo,
     enviarCorreos
-  } = useEnvios();
+  } = useEnvios(user);
 
   return (
     <div className="envios-container">
       <h2>Envío de Correos</h2>
 
-      {/* TIPO DE ENVÍO */}
       <label>Tipo de envío</label>
       <select
         value={modoEnvio}
@@ -34,10 +38,12 @@ export default function Envios() {
         <option value="programado">Programado</option>
       </select>
 
-      {/* REMITENTE */}
       <label>Remitente</label>
-      <select value={remitente_id}
-        onChange={(e) => setRemitente_id(e.target.value)}>
+      <select
+        value={remitente_id}
+        onChange={(e) => setRemitente_id(e.target.value)}
+      >
+        <option value="">Seleccione remitente</option>
         {remitentes.map(rem => (
           <option key={rem.id} value={rem.id}>
             {rem.nombre} - {rem.correo}
@@ -45,7 +51,6 @@ export default function Envios() {
         ))}
       </select>
 
-      {/* FECHA PROGRAMADA */}
       {modoEnvio === 'programado' && (
         <>
           <label>Fecha y hora</label>
@@ -57,7 +62,19 @@ export default function Envios() {
         </>
       )}
 
-      {/* ARCHIVO */}
+      <label>Plantilla</label>
+      <select
+        value={plantilla_id}
+        onChange={(e) => setPlantilla_id(e.target.value)}
+      >
+        <option value="">Seleccione una plantilla</option>
+        {plantillas.map(p => (
+          <option key={p.id} value={p.id}>
+            {p.nom_plantilla}
+          </option>
+        ))}
+      </select>
+
       <label>Archivo Excel</label>
       <input
         type="file"
@@ -69,7 +86,6 @@ export default function Envios() {
         <p className="file-name">📄 {fileName}</p>
       )}
 
-      {/* BOTÓN */}
       <button
         onClick={() => enviarCorreos({ preview: false })}
         disabled={isProcessing}

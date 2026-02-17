@@ -1,5 +1,6 @@
 // server.js - Servidor Express
 import nodemailer from 'nodemailer';
+console.log("🔥 BACKEND CORRECTO INICIADO 🔥");
 
 const enviarCorreo = async ({ remitente_id, to, subject, html }) => {
 
@@ -128,10 +129,6 @@ app.post('/api/login', async (req, res) => {
     });
   }
 });
-
-
-// Configurar multer para archivos
-//const upload = multer({ storage: multer.memoryStorage() });
 
 // Listar usuarios (ADMIN)
 app.get('/api/admin/usuarios', async (req, res) => {
@@ -706,15 +703,15 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
   const conn = await pool.getConnection();
 
   try {
-    // 🔐 Usuario autenticado obligatorio
-    if (!req.user || !req.user.id) {
+    const { documento } = req.body;
+    if (!documento) {
       return res.status(401).json({
         ok: false,
-        message: 'No autorizado'
+        message: 'Documento requerido'
       });
     }
 
-    const usuarioId = req.user.id;
+    const usuarioId = documento;
 
     if (!req.file) {
       return res.status(400).json({
@@ -747,14 +744,14 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
 
     await conn.beginTransaction();
 
-    // 🔐 VALIDACIÓN REAL DE ACCESO POR ÁREA
+    // VALIDACIÓN REAL DE ACCESO POR ÁREA
     const [plantillaRows] = await conn.execute(
       `
       SELECT p.id, p.asunto, p.cuerpo_html
       FROM plantillas p
-      INNER JOIN usuario_areas ua ON ua.area_id = p.area_id
+      INNER JOIN area_usuario ua ON ua.id_area = p.area_id
       WHERE p.id = ?
-      AND ua.usuario_id = ?
+      AND ua.id_usuario = ?
       AND p.estado = 'ACTIVA'
       `,
       [plantilla_id, usuarioId]
@@ -843,7 +840,7 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
       if (modoEnvio === 'inmediato') {
         try {
           await enviarCorreo({
-            remitenteId: remitente_id,
+            remitente_id: remitente_id,
             to: email,
             subject: asuntoFinal,
             html: htmlFinal
@@ -1234,30 +1231,13 @@ app.get('/api/templates/:id/download-excel', async (req, res) => {
 
 // Plantillas disponibles para ususario por area
 app.get('/api/plantillas-disponibles', async (req, res) => {
-  try {
-    const usuarioId = req.user?.id || 1; // ⚠️ temporal si no tienes auth
+  console.log("🔥🔥🔥 ENDPOINT NUEVO EJECUTADO 🔥🔥🔥");
 
-    const [rows] = await pool.execute(
-      `
-      SELECT p.id, p.nombre, p.asunto
-      FROM plantillas p
-      INNER JOIN usuario_areas ua ON ua.area_id = p.area_id
-      WHERE ua.usuario_id = ?
-      AND p.estado = 'ACTIVA'
-      `,
-      [usuarioId]
-    );
-
-    res.json(rows);
-
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      ok: false,
-      message: 'Error obteniendo plantillas'
-    });
-  }
+  res.json([
+    { id: 999, nom_plantilla: "PLANTILLA PRUEBA FORZADA" }
+  ]);
 });
+
 
 // ============================================
 // RUTAS PARA VER REGISTROS
@@ -1291,8 +1271,6 @@ app.get('/api/registros/actividad', async (req, res) => {
 
 
 // Reprogramar un correo (cambiar fecha/hora)
-
-
 // Middleware para manejar rutas API no encontradas 
 app.use('/api/*', (req, res) => {
   res.status(404).json({ 
