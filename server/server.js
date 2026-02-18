@@ -1231,13 +1231,71 @@ app.get('/api/templates/:id/download-excel', async (req, res) => {
 
 // Plantillas disponibles para ususario por area
 app.get('/api/plantillas-disponibles', async (req, res) => {
-  console.log("🔥🔥🔥 ENDPOINT NUEVO EJECUTADO 🔥🔥🔥");
+  try {
+    const { documento } = req.query;
 
-  res.json([
-    { id: 999, nom_plantilla: "PLANTILLA PRUEBA FORZADA" }
-  ]);
+    if (!documento) {
+      return res.status(400).json({
+        ok: false,
+        message: 'Documento requerido'
+      });
+    }
+
+    // 🔹 Primero obtener rol del usuario
+    const [usuarios] = await pool.execute(
+      'SELECT rol FROM usuarios WHERE documento = ?',
+      [documento]
+    );
+
+    if (!usuarios.length) {
+      return res.status(404).json({
+        ok: false,
+        message: 'Usuario no encontrado'
+      });
+    }
+
+    const rol = usuarios[0].rol;
+
+    let query;
+    let params = [];
+
+    //  SI ES ADMINISTRADOR → ve todas las plantillas activas
+    if (rol === 'ADMINISTRADOR') {
+
+      query = `
+        SELECT id, nom_plantilla
+        FROM plantillas
+        WHERE estado = 'ACTIVO'
+        ORDER BY nom_plantilla
+      `;
+
+    } else {
+
+      //  SI ES USUARIO NORMAL → solo las de sus áreas
+      query = `
+        SELECT p.id, p.nom_plantilla
+        FROM plantillas p
+        INNER JOIN area_usuario au ON au.id_area = p.area_id
+        WHERE au.id_usuario = ?
+        AND p.estado = 'ACTIVO'
+        ORDER BY p.nom_plantilla
+      `;
+
+      params = [documento];
+    }
+
+    const [rows] = await pool.execute(query, params);
+
+    res.json(rows);
+
+  } catch (error) {
+    console.error("Error obteniendo plantillas:", error);
+    res.status(500).json({
+      ok: false,
+      message: 'Error obteniendo plantillas'
+    });
+  }
 });
-
 
 // ============================================
 // RUTAS PARA VER REGISTROS
