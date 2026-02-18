@@ -704,7 +704,7 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
 
   try {
     const { documento } = req.body;
-    if (!documento) {
+    if (!documento) { 
       return res.status(401).json({
         ok: false,
         message: 'Documento requerido'
@@ -745,27 +745,66 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
     await conn.beginTransaction();
 
     // VALIDACIÓN REAL DE ACCESO POR ÁREA
-    const [plantillaRows] = await conn.execute(
+    // 🔹 Obtener rol del usuario
+  const [usuarios] = await conn.execute(
+    'SELECT rol FROM usuarios WHERE documento = ?',
+    [documento]
+  );
+
+  if (!usuarios.length) {
+    await conn.rollback();
+    return res.status(404).json({
+      ok: false,
+      message: 'Usuario no encontrado'
+    });
+  }
+
+  const rol = usuarios[0].rol;
+
+  let plantillaRows;
+
+  // 🔥 SI ES ADMIN → no validar área
+  if (rol === 'ADMINISTRADOR') {
+
+    const [rows] = await conn.execute(
       `
-      SELECT p.id, p.asunto, p.cuerpo_html
-      FROM plantillas p
-      INNER JOIN area_usuario ua ON ua.id_area = p.area_id
-      WHERE p.id = ?
-      AND ua.id_usuario = ?
-      AND p.estado = 'ACTIVA'
+      SELECT id, nom_plantilla, html_content
+      FROM plantillas
+      WHERE id = ?
+      AND estado = 'ACTIVO'
       `,
-      [plantilla_id, usuarioId]
+      [plantilla_id]
     );
 
-    if (!plantillaRows.length) {
-      await conn.rollback();
-      return res.status(403).json({
-        ok: false,
-        message: 'No tiene acceso a esta plantilla'
-      });
-    }
+    plantillaRows = rows;
 
-    const plantilla = plantillaRows[0];
+  } else {
+
+    // 🔥 SI ES USUARIO NORMAL → validar área
+    const [rows] = await conn.execute(
+      `
+      SELECT p.id, p.nom_plantilla, p.html_content
+      FROM plantillas p
+      INNER JOIN area_usuario au ON au.id_area = p.area_id
+      WHERE p.id = ?
+      AND au.id_usuario = ?
+      AND p.estado = 'ACTIVO'
+      `,
+      [plantilla_id, documento]
+    );
+
+    plantillaRows = rows;
+  }
+
+  if (!plantillaRows.length) {
+    await conn.rollback();
+    return res.status(403).json({
+      ok: false,
+      message: 'No tiene acceso a la plantilla'
+    });
+  }
+
+  const plantilla = plantillaRows[0];
 
     // 🔐 Validar que el remitente esté activo
     const [remitenteRows] = await conn.execute(
@@ -788,8 +827,8 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
     const [envioResult] = await conn.execute(
       `
       INSERT INTO envios
-      (plantilla_id, remitente_id, tipo, estado, fecha_programada, fecha_envio, creado_por)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      (plantilla_id, remitente_id, tipo, estado, fecha_programada, fecha_envio)
+      VALUES (?, ?, ?, ?, ?, ?)
       `,
       [
         plantilla_id,
@@ -797,8 +836,7 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
         tipo,
         estadoInicial,
         modoEnvio === 'programado' ? programadoPara : null,
-        modoEnvio === 'inmediato' ? new Date() : null,
-        usuarioId
+        modoEnvio === 'inmediato' ? new Date() : null
       ]
     );
 
@@ -821,11 +859,11 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
     let fallidos = 0;
 
     for (const row of rows) {
-      const email = row.Email || row.email;
-      if (!email) continue;
+      const correo = row.Correo || row.correo;
+      if (!correo) continue;
 
-      let htmlFinal = plantilla.cuerpo_html;
-      let asuntoFinal = plantilla.asunto;
+      let htmlFinal = plantilla.html_content;
+      let asuntoFinal = plantilla.nom_plantilla;
 
       // 🔁 Reemplazo dinámico seguro
       for (const key in row) {
@@ -841,7 +879,7 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
         try {
           await enviarCorreo({
             remitente_id: remitente_id,
-            to: email,
+            to: correo,
             subject: asuntoFinal,
             html: htmlFinal
           });
@@ -859,10 +897,10 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
       await conn.execute(
         `
         INSERT INTO destinatarios_envio
-        (envio_id, email, estado, error_mensaje)
+        (envio_id, correo, estado, fecha_intento)
         VALUES (?, ?, ?, ?)
         `,
-        [envioId, email, estadoDest, errorMsg]
+        [envioId, correo, estadoDest, new Date()]
       );
     }
 
