@@ -904,7 +904,7 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
       );
     }
 
-    // 📌 Estado final
+    //  Estado final
     await conn.execute(
       `UPDATE envios SET estado = ? WHERE id = ?`,
       [
@@ -1342,31 +1342,56 @@ app.get('/api/plantillas-disponibles', async (req, res) => {
 // Obtener registros de actividad
 app.get('/api/registros/actividad', async (req, res) => {
   try {
-    const { userId } = req.query;
+    const { userId, action, fechaInicio, fechaFin } = req.query;
+
     let query = `
-      SELECT al.*, u.nombre as user_nombre, u.usuario as username
+      SELECT 
+        al.*,
+        u.nombre as user_nombre,
+        u.correo as user_correo
       FROM activity_logs al
-      JOIN usuarios u ON al.user_id = u.id
+      JOIN usuarios u ON al.user_id = u.documento
+      WHERE al.action NOT IN ('SOLICITAR_RECUPERACION_PASSWORD', 'RESET_PASSWORD')
     `;
+
     const params = [];
-    
+
+    // Filtro por usuario
     if (userId && userId !== 'todos') {
-      query += ' WHERE al.user_id = ?';
+      query += ' AND al.user_id = ?';
       params.push(userId);
     }
-    
-    query += ' ORDER BY al.timestamp DESC LIMIT 1000';
-    
+
+    // Filtro por acción
+    if (action && action !== 'todas') {
+      query += ' AND al.action = ?';
+      params.push(action);
+    }
+
+    // Filtro por fecha inicio
+    if (fechaInicio) {
+      query += ' AND DATE(al.timestamp) >= ?';
+      params.push(fechaInicio);
+    }
+
+    // Filtro por fecha fin
+    if (fechaFin) {
+      query += ' AND DATE(al.timestamp) <= ?';
+      params.push(fechaFin);
+    }
+
+    query += ' ORDER BY al.timestamp DESC';
+
     const [registros] = await pool.execute(query, params);
+
     res.json({ success: true, registros });
+
   } catch (error) {
     console.error('Error obteniendo registros de actividad:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-
-// Reprogramar un correo (cambiar fecha/hora)
 // Middleware para manejar rutas API no encontradas 
 app.use('/api/*', (req, res) => {
   res.status(404).json({ 
