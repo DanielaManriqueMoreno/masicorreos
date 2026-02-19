@@ -90,3 +90,24 @@ td {
 tr:hover {
   background-color: #f3f4f6;
 }
+
+/*================= PAGINACIÓN =================*/
+.paginacion {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+}
+
+.paginacion button {
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  cursor: pointer;
+}
+
+.paginacion button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

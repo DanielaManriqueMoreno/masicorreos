@@ -1342,60 +1342,70 @@ app.get('/api/plantillas-disponibles', async (req, res) => {
 // Obtener registros de actividad
 app.get('/api/registros/actividad', async (req, res) => {
   try {
-    const { userId, action, fechaInicio, fechaFin } = req.query;
+    const { userId, action, fechaInicio, fechaFin, page = 1, limit = 10 } = req.query;
 
-    let query = `
-      SELECT 
-        al.id,
-        al.user_id,
-        al.action,
-        al.description,
-        al.ip_address,
-        al.timestamp,
-        u.nombre as user_nombre,
-        u.correo as user_correo
-      FROM activity_logs al
-      JOIN usuarios u ON al.user_id = u.documento
+    const pageNumber = parseInt(page);
+    const pageSize = parseInt(limit);
+    const offset = (pageNumber - 1) * pageSize;
+
+    let where = `
       WHERE al.action NOT IN ('SOLICITAR_RECUPERACION_PASSWORD', 'RESET_PASSWORD')
     `;
 
     const params = [];
 
     if (userId && userId !== 'todos') {
-      query += ' AND al.user_id = ?';
+      where += ' AND al.user_id = ?';
       params.push(userId);
     }
 
     if (action && action !== 'todas') {
-      query += ' AND al.action = ?';
+      where += ' AND al.action = ?';
       params.push(action);
     }
 
     if (fechaInicio) {
-      query += ' AND DATE(al.timestamp) >= ?';
+      where += ' AND DATE(al.timestamp) >= ?';
       params.push(fechaInicio);
     }
 
     if (fechaFin) {
-      query += ' AND DATE(al.timestamp) <= ?';
+      where += ' AND DATE(al.timestamp) <= ?';
       params.push(fechaFin);
     }
 
-    query += ' ORDER BY al.timestamp DESC';
+    // 🔢 Total de registros
+    const [totalRows] = await pool.execute(
+      `SELECT COUNT(*) as total
+       FROM activity_logs al
+       ${where}`,
+      params
+    );
 
-    const [registros] = await pool.execute(query, params);
+    const total = totalRows[0].total;
+
+    // 📋 Datos paginados
+    const [registros] = await pool.execute(
+      `SELECT al.*, u.nombre as user_nombre
+       FROM activity_logs al
+       JOIN usuarios u ON al.user_id = u.documento
+       ${where}
+       ORDER BY al.timestamp DESC
+       LIMIT ? OFFSET ?`,
+      [...params, pageSize, offset]
+    );
 
     res.json({
       success: true,
-      registros
+      registros,
+      total,
+      totalPages: Math.ceil(total / pageSize),
+      currentPage: pageNumber
     });
 
   } catch (error) {
-    console.error('Error obteniendo registros de actividad:', error);
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    console.error(error);
+    res.status(500).json({ success: false });
   }
 });
 

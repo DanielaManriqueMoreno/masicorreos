@@ -6,6 +6,8 @@ export default function RegistrosActividad() {
 
   const [registros, setRegistros] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
+  const [pagina, setPagina] = useState(1);
+  const [totalPaginas, setTotalPaginas] = useState(1);
 
   const [filtros, setFiltros] = useState({
     userId: "todos",
@@ -37,11 +39,16 @@ export default function RegistrosActividad() {
   const obtenerRegistros = async () => {
     try {
       const res = await axios.get("/api/registros/actividad", {
-        params: filtros
+        params: {
+          ...filtros,
+          page: pagina,
+          limit: 10
+        }
       });
 
       if (res.data.success) {
         setRegistros(res.data.registros);
+        setTotalPaginas(res.data.totalPages);
       }
 
     } catch (error) {
@@ -59,6 +66,10 @@ export default function RegistrosActividad() {
   const handleBuscar = () => {
     obtenerRegistros();
   };
+
+  useEffect(() => {
+    obtenerRegistros();
+  }, [pagina]);
 
   return (
     <div className="registros-container">
@@ -127,7 +138,26 @@ export default function RegistrosActividad() {
           </tbody>
         </table>
       </div>
+      {/* PAGINACIÓN */}
+      <div className="paginacion">
+        <button 
+          disabled={pagina === 1}
+          onClick={() => setPagina(pagina - 1)}
+        >
+          Anterior
+        </button>
 
+        <span>
+          Página {pagina} de {totalPaginas}
+        </span>
+
+        <button 
+          disabled={pagina === totalPaginas}
+          onClick={() => setPagina(pagina + 1)}
+        >
+          Siguiente
+        </button>
+      </div>
     </div>
   );
 }
