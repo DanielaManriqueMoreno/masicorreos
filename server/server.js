@@ -1,6 +1,5 @@
 // server.js - Servidor Express
 import nodemailer from 'nodemailer';
-console.log("🔥 BACKEND CORRECTO INICIADO 🔥");
 
 const enviarCorreo = async ({ remitente_id, to, subject, html }) => {
 
@@ -24,7 +23,12 @@ const enviarCorreo = async ({ remitente_id, to, subject, html }) => {
       pass: remitente.password_app
     }
   });
-
+  console.log("Configuración SMTP:", {
+    host: remitente.smtp_host,
+    port: remitente.smtp_port,
+    secure: remitente.secure,
+    user: remitente.correo
+  });
   await transporter.sendMail({
     from: `"${remitente.nombre}" <${remitente.correo}>`,
     to,
@@ -53,6 +57,21 @@ import bcrypt from 'bcryptjs';
 import multer from 'multer';
 import crypto from 'crypto';
 import cron from 'node-cron';
+
+const logActivity = async (userId, action, description, req = null) => {
+    try {
+      const ip = req?.ip || null;
+
+      await pool.execute(
+        `INSERT INTO activity_logs (user_id, username, action, description, ip_address)
+        VALUES (?, ?, ?, ?, ?)`,
+        [userId, req?.user?.nombre || 'Desconocido', action, description, ip]
+      );
+
+    } catch (error) {
+      console.error("Error registrando actividad:", error);
+    }
+};
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -214,6 +233,13 @@ app.post('/api/admin/crear-usuario', async (req, res) => {
         );
       }
     }
+
+    await logActivity(
+      usuarioCreadorDocumento,
+      'Administrador',
+      'CREAR_USUARIO',
+      `Usuario creado: ${nombre} (${documento})`
+    );
 
     res.json({
       success: true,
@@ -498,6 +524,12 @@ app.post('/api/admin/areas', async (req, res) => {
     );
 
     res.json({ success: true, message: "Área creada correctamente" });
+    await logActivity(
+      1, // o el admin real si lo tienes en sesión
+      'Administrador',
+      'CREAR_AREA',
+      `Área creada: ${nombre}`
+    );
 
   } catch (error) {
     console.error("Error creando área:", error);
@@ -525,6 +557,12 @@ app.put('/api/admin/areas/:id', async (req, res) => {
     );
 
     res.json({ success: true, message: "Área actualizada correctamente" });
+    await logActivity(
+      1,
+      'Administrador',
+      'ACTUALIZAR_AREA',
+      `Área actualizada: ${nombre}`
+    );
 
   } catch (error) {
     console.error("Error actualizando área:", error);
@@ -543,6 +581,13 @@ app.delete('/api/admin/areas/:id', async (req, res) => {
     );
 
     res.json({ success: true });
+    await logActivity(
+      1,
+      'Administrador',
+      'ELIMINAR_AREA',
+      `Área eliminada ID: ${id}`
+    );
+
   } catch (error) {
     console.error("Error eliminando área:", error);
     res.status(500).json({ success: false });
@@ -589,8 +634,8 @@ app.post('/api/forgot-password', async (req, res) => {
 
     // Guardar código en la base de datos (usamos el campo reset_token para guardar el código)
     await pool.execute(
-      'UPDATE usuarios SET reset_token = ?, reset_token_expires = ? WHERE id = ?',
-      [codigoVerificacion, resetTokenExpires, user.id]
+      'UPDATE usuarios SET reset_token = ?, reset_token_expires = ? WHERE documento = ?',
+      [codigoVerificacion, resetTokenExpires, user.documento]
     );
 
     // Enviar correo de recuperación con el código
@@ -780,7 +825,7 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
 
   } else {
 
-    // 🔥 SI ES USUARIO NORMAL → validar área
+    //SI ES USUARIO NORMAL → validar área
     const [rows] = await conn.execute(
       `
       SELECT p.id, p.nom_plantilla, p.html_content
@@ -806,7 +851,7 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
 
   const plantilla = plantillaRows[0];
 
-    // 🔐 Validar que el remitente esté activo
+    // Validar que el remitente esté activo
     const [remitenteRows] = await conn.execute(
       `SELECT id FROM remitentes WHERE id = ? AND estado = 'ACTIVO'`,
       [remitente_id]
@@ -820,9 +865,9 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
       });
     }
 
-    // 📝 Crear registro del envío
+    // Crear registro del envío
     const tipo = modoEnvio === 'programado' ? 'PROGRAMADO' : 'INMEDIATO';
-    const estadoInicial = modoEnvio === 'programado' ? 'pendiente' : 'procesando';
+    const estadoInicial = 'pendiente';
 
     const [envioResult] = await conn.execute(
       `
@@ -839,10 +884,9 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
         modoEnvio === 'inmediato' ? new Date() : null
       ]
     );
-
     const envioId = envioResult.insertId;
 
-    // 📂 Leer Excel
+    // Leer Excel
     const workbook = XLSX.readFile(req.file.path);
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const rows = XLSX.utils.sheet_to_json(sheet);
@@ -857,63 +901,37 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
 
     let enviados = 0;
     let fallidos = 0;
+    let total = 0;
 
     for (const row of rows) {
       const correo = row.Correo || row.correo;
       if (!correo) continue;
 
-      let htmlFinal = plantilla.html_content;
-      let asuntoFinal = plantilla.nom_plantilla;
-
-      // 🔁 Reemplazo dinámico seguro
-      for (const key in row) {
-        const value = row[key] ?? '';
-        htmlFinal = htmlFinal.replaceAll(`{{${key}}}`, value);
-        asuntoFinal = asuntoFinal.replaceAll(`{{${key}}}`, value);
-      }
-
-      let estadoDest = 'pendiente';
-      let errorMsg = null;
-
-      if (modoEnvio === 'inmediato') {
-        try {
-          await enviarCorreo({
-            remitente_id: remitente_id,
-            to: correo,
-            subject: asuntoFinal,
-            html: htmlFinal
-          });
-
-          estadoDest = 'enviado';
-          enviados++;
-
-        } catch (err) {
-          estadoDest = 'fallido';
-          errorMsg = err.message;
-          fallidos++;
-        }
-      }
-
       await conn.execute(
         `
         INSERT INTO destinatarios_envio
-        (envio_id, correo, estado, fecha_intento)
-        VALUES (?, ?, ?, ?)
+        (envio_id, correo, estado)
+        VALUES (?, ?, 'pendiente')
         `,
-        [envioId, correo, estadoDest, new Date()]
+        [envioId, correo]
       );
+
+      total++;
     }
 
     //  Estado final
     await conn.execute(
-      `UPDATE envios SET estado = ? WHERE id = ?`,
-      [
-        modoEnvio === 'inmediato' ? 'finalizado' : 'pendiente',
-        envioId
-      ]
+      `UPDATE envios SET total_destinatarios = ? WHERE id = ? `,
+      [total, envioId]
     );
 
     await conn.commit();
+
+    await logActivity(
+      usuarioId,
+      'ENVIO_CORREOS',
+      `Envío ID ${envioId} - Total: ${rows.length}, Enviados: ${enviados}, Fallidos: ${fallidos}`
+    );
 
     res.json({
       ok: true,
@@ -958,13 +976,6 @@ const processScheduledEmails = async () => {
 
       for (const dest of destinatarios) {
         try {
-          await enviarCorreo({
-            remitente_id: envio.remitente_id,
-            to: dest.email,
-            subject: 'Correo programado',
-            html: '<p>Contenido programado</p>'
-          });
-
           await pool.execute(
             `UPDATE destinatarios_envio 
              SET estado = 'enviado' 
@@ -1225,11 +1236,9 @@ app.get('/api/templates/:id/download-excel', async (req, res) => {
     }
 
     const columns = [
-      'Email',
+      'Correo',
       ...variables,
       'Asunto',
-      'Fecha Programada',
-      'Hora Programada'
     ];
     
     const exampleRow = {};

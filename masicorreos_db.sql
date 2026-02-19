@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 16-02-2026 a las 17:46:30
+-- Tiempo de generación: 19-02-2026 a las 23:40:41
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -90,7 +90,15 @@ INSERT INTO `activity_logs` (`id`, `user_id`, `username`, `action`, `description
 (170, 6, 'Usuario', 'ACTUALIZAR_PLANTILLA', 'Plantilla actualizada: 3', '', '2026-02-05 19:48:39'),
 (171, 6, 'Usuario', 'ACTUALIZAR_PLANTILLA', 'Plantilla actualizada: 3', '', '2026-02-05 20:00:01'),
 (172, 6, 'Usuario', 'ACTUALIZAR_PLANTILLA', 'Plantilla actualizada: 3', '', '2026-02-06 14:02:23'),
-(173, 6, 'Usuario', 'ACTUALIZAR_PLANTILLA', 'Plantilla actualizada: 3', '', '2026-02-06 14:05:41');
+(173, 6, 'Usuario', 'ACTUALIZAR_PLANTILLA', 'Plantilla actualizada: 3', '', '2026-02-06 14:05:41'),
+(174, 6, '', 'Usuario', 'CREAR_PLANTILLA', NULL, '2026-02-19 20:36:08'),
+(175, 1, '', 'Administrador', 'CREAR_AREA', NULL, '2026-02-19 20:36:31'),
+(176, 6, '', 'Usuario', 'ENVIO_CORREOS', NULL, '2026-02-19 20:38:50'),
+(177, 6, 'Desconocido', 'Usuario', 'ENVIO_CORREOS', NULL, '2026-02-19 20:43:28'),
+(178, 1, 'Desconocido', 'Administrador', 'CREAR_AREA', NULL, '2026-02-19 20:43:39'),
+(179, 6, 'Desconocido', 'Usuario', 'ENVIO_CORREOS', NULL, '2026-02-19 21:51:54'),
+(180, 6, 'Desconocido', 'Usuario', 'ENVIO_CORREOS', NULL, '2026-02-19 21:59:51'),
+(181, 6, 'Desconocido', 'Usuario', 'ENVIO_CORREOS', NULL, '2026-02-19 22:00:27');
 
 -- --------------------------------------------------------
 
@@ -114,7 +122,9 @@ INSERT INTO `areas` (`id`, `nombre`, `estado`) VALUES
 (7, 'Talento Humano', 'ACTIVO'),
 (8, 'Contabilidad', 'ACTIVO'),
 (9, 'Radicacion', 'ACTIVO'),
-(10, 'Sistemas', 'ACTIVO');
+(10, 'Sistemas', 'ACTIVO'),
+(12, 'area1', 'ACTIVO'),
+(13, 'area2', 'ACTIVO');
 
 -- --------------------------------------------------------
 
@@ -134,9 +144,12 @@ CREATE TABLE `area_usuario` (
 
 INSERT INTO `area_usuario` (`id`, `id_usuario`, `id_area`) VALUES
 (27, 22222222, 8),
-(56, 11111111, 7),
-(57, 11111111, 9),
-(58, 11111111, 10);
+(59, 11111111, 7),
+(60, 11111111, 9),
+(61, 11111111, 10),
+(62, 33333333, 5),
+(63, 33333333, 10),
+(64, 33333333, 6);
 
 -- --------------------------------------------------------
 
@@ -148,8 +161,11 @@ CREATE TABLE `destinatarios_envio` (
   `id` int(11) NOT NULL,
   `envio_id` int(11) NOT NULL,
   `correo` varchar(255) NOT NULL,
-  `estado` enum('pendiente','enviado','fallido','abierto') DEFAULT 'pendiente',
-  `fecha_intento` datetime DEFAULT NULL
+  `estado` enum('pendiente','procesando','enviado','fallido','reintentando') DEFAULT 'pendiente',
+  `intentos` int(11) DEFAULT 0,
+  `mensaje_error` text DEFAULT NULL,
+  `fecha_envio` datetime DEFAULT NULL,
+  `fecha_apertura` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -188,15 +204,53 @@ CREATE TABLE `envios` (
   `id` int(11) NOT NULL,
   `tipo` enum('PROGRAMADO','INMEDIATO') NOT NULL,
   `remitente_id` int(11) NOT NULL,
+  `plantilla_id` int(11) NOT NULL,
   `asunto` varchar(255) DEFAULT NULL,
   `mensaje` text DEFAULT NULL,
   `archivo_adjunto` varchar(255) DEFAULT NULL,
   `cantidad_destinatarios` int(11) DEFAULT 0,
-  `estado` enum('pendiente','enviado','fallido') DEFAULT 'pendiente',
+  `estado` enum('pendiente','procesando','parcial','completado','fallido','cancelado') DEFAULT 'pendiente',
+  `total_destinatarios` int(11) DEFAULT 0,
+  `enviados` int(11) DEFAULT 0,
+  `fallidos` int(11) DEFAULT 0,
   `fecha_creacion` datetime DEFAULT current_timestamp(),
-  `fecha_programada` datetime NOT NULL,
+  `fecha_programada` datetime DEFAULT NULL,
+  `fecha_inicio` datetime DEFAULT NULL,
+  `fecha_fin` datetime DEFAULT NULL,
   `fecha_envio` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `envios`
+--
+
+INSERT INTO `envios` (`id`, `tipo`, `remitente_id`, `plantilla_id`, `asunto`, `mensaje`, `archivo_adjunto`, `cantidad_destinatarios`, `estado`, `total_destinatarios`, `enviados`, `fallidos`, `fecha_creacion`, `fecha_programada`, `fecha_inicio`, `fecha_fin`, `fecha_envio`) VALUES
+(3, 'INMEDIATO', 1, 7, NULL, NULL, NULL, 0, '', 0, 0, 0, '2026-02-18 16:23:49', NULL, NULL, NULL, '2026-02-18 16:23:49'),
+(4, 'INMEDIATO', 1, 7, NULL, NULL, NULL, 0, '', 0, 0, 0, '2026-02-18 16:23:52', NULL, NULL, NULL, '2026-02-18 16:23:52'),
+(5, 'INMEDIATO', 1, 7, NULL, NULL, NULL, 0, '', 0, 0, 0, '2026-02-18 16:23:53', NULL, NULL, NULL, '2026-02-18 16:23:53'),
+(6, 'INMEDIATO', 1, 7, NULL, NULL, NULL, 0, '', 0, 0, 0, '2026-02-18 16:23:54', NULL, NULL, NULL, '2026-02-18 16:23:54'),
+(7, 'INMEDIATO', 1, 7, NULL, NULL, NULL, 0, '', 0, 0, 0, '2026-02-18 16:23:54', NULL, NULL, NULL, '2026-02-18 16:23:54'),
+(8, 'INMEDIATO', 1, 7, NULL, NULL, NULL, 0, '', 0, 0, 0, '2026-02-18 16:23:54', NULL, NULL, NULL, '2026-02-18 16:23:54'),
+(9, 'INMEDIATO', 1, 7, NULL, NULL, NULL, 0, '', 0, 0, 0, '2026-02-18 16:23:54', NULL, NULL, NULL, '2026-02-18 16:23:54'),
+(10, 'INMEDIATO', 1, 7, NULL, NULL, NULL, 0, '', 0, 0, 0, '2026-02-18 16:23:55', NULL, NULL, NULL, '2026-02-18 16:23:55'),
+(11, 'INMEDIATO', 1, 7, NULL, NULL, NULL, 0, '', 0, 0, 0, '2026-02-18 16:23:55', NULL, NULL, NULL, '2026-02-18 16:23:55'),
+(12, 'INMEDIATO', 1, 7, NULL, NULL, NULL, 0, '', 0, 0, 0, '2026-02-18 16:23:55', NULL, NULL, NULL, '2026-02-18 16:23:55'),
+(13, 'INMEDIATO', 1, 7, NULL, NULL, NULL, 0, '', 0, 0, 0, '2026-02-18 16:23:55', NULL, NULL, NULL, '2026-02-18 16:23:55'),
+(14, 'INMEDIATO', 1, 7, NULL, NULL, NULL, 0, '', 0, 0, 0, '2026-02-18 16:23:56', NULL, NULL, NULL, '2026-02-18 16:23:56'),
+(15, 'INMEDIATO', 1, 7, NULL, NULL, NULL, 0, '', 0, 0, 0, '2026-02-18 16:23:56', NULL, NULL, NULL, '2026-02-18 16:23:56'),
+(16, 'INMEDIATO', 1, 7, NULL, NULL, NULL, 0, '', 0, 0, 0, '2026-02-18 16:23:56', NULL, NULL, NULL, '2026-02-18 16:23:56'),
+(17, 'INMEDIATO', 1, 7, NULL, NULL, NULL, 0, '', 0, 0, 0, '2026-02-18 16:23:56', NULL, NULL, NULL, '2026-02-18 16:23:56'),
+(18, 'INMEDIATO', 1, 7, NULL, NULL, NULL, 0, '', 0, 0, 0, '2026-02-18 16:23:56', NULL, NULL, NULL, '2026-02-18 16:23:56'),
+(19, 'INMEDIATO', 1, 7, NULL, NULL, NULL, 0, '', 0, 0, 0, '2026-02-18 16:23:56', NULL, NULL, NULL, '2026-02-18 16:23:56'),
+(20, 'INMEDIATO', 1, 7, NULL, NULL, NULL, 0, '', 0, 0, 0, '2026-02-18 16:23:56', NULL, NULL, NULL, '2026-02-18 16:23:56'),
+(22, 'INMEDIATO', 1, 7, NULL, NULL, NULL, 0, '', 0, 0, 0, '2026-02-18 16:34:05', NULL, NULL, NULL, '2026-02-18 16:34:05'),
+(23, 'INMEDIATO', 1, 7, NULL, NULL, NULL, 0, '', 0, 0, 0, '2026-02-18 16:34:35', NULL, NULL, NULL, '2026-02-18 16:34:35'),
+(24, 'INMEDIATO', 1, 7, NULL, NULL, NULL, 0, '', 0, 0, 0, '2026-02-18 16:35:22', NULL, NULL, NULL, '2026-02-18 16:35:22'),
+(25, 'INMEDIATO', 1, 7, NULL, NULL, NULL, 0, '', 0, 0, 0, '2026-02-19 15:38:40', NULL, NULL, NULL, '2026-02-19 15:38:40'),
+(26, 'INMEDIATO', 1, 7, NULL, NULL, NULL, 0, '', 0, 0, 0, '2026-02-19 15:43:23', NULL, NULL, NULL, '2026-02-19 15:43:23'),
+(27, 'INMEDIATO', 1, 7, NULL, NULL, NULL, 0, '', 0, 0, 0, '2026-02-19 16:51:49', NULL, NULL, NULL, '2026-02-19 16:51:49'),
+(28, 'INMEDIATO', 1, 7, NULL, NULL, NULL, 0, '', 0, 0, 0, '2026-02-19 16:59:46', NULL, NULL, NULL, '2026-02-19 16:59:46'),
+(29, 'INMEDIATO', 1, 7, NULL, NULL, NULL, 0, '', 0, 0, 0, '2026-02-19 17:00:22', NULL, NULL, NULL, '2026-02-19 17:00:22');
 
 -- --------------------------------------------------------
 
@@ -241,7 +295,9 @@ INSERT INTO `plantillas` (`id`, `user_id`, `nom_plantilla`, `descripcion`, `html
 (3, 6, 'prueba1', 'prueba1\n', 'Hola {{nombre}} {{ mensaje }}', '[\" mensaje \"]', 6, 'ACTIVO', '2026-01-30 16:47:12', '2026-01-30 16:47:12'),
 (4, 6, 'prueba2', '´poiuy', 'les informo que {{ mensaje }}', '[\" mensaje \"]', 6, 'ACTIVO', '2026-01-30 16:52:32', '2026-01-30 16:52:32'),
 (5, 6, 'plantilla 1', 'Descripcion', 'Hola {{ nombre }} este es un mensaje de prueba hecho el {{ fecha }}', '[\" nombre \",\" fecha \"]', 5, 'ACTIVO', '2026-02-02 21:08:01', '2026-02-02 21:08:01'),
-(6, 6, 'prueba1', 'prueba', 'hola {{ nombre }} este es un mensaje de prueba hecho el {{ fecha}}', '[\" nombre \",\" fecha\"]', 6, 'ACTIVO', '2026-02-02 22:32:38', '2026-02-02 22:32:38');
+(6, 6, 'prueba1', 'prueba', 'hola {{ nombre }} este es un mensaje de prueba hecho el {{ fecha}}', '[\" nombre \",\" fecha\"]', 6, 'ACTIVO', '2026-02-02 22:32:38', '2026-02-02 22:32:38'),
+(7, 6, 'calidad 1', 'ninguna', 'Hola este es un correo de prueba enviado el dia {{ fecha }} a las {{ hora }}, enviado a {{ nombre }} que vive en {{ direccion }}', '[\" fecha \",\" hora \",\" nombre \",\" direccion \"]', 6, 'ACTIVO', '2026-02-18 20:31:25', '2026-02-18 20:31:25'),
+(8, 6, 'plantilla contabilidad', 'no aplica', 'Este es un mensaje de prueba del area {{ contabilidad }}', '[\" contabilidad \"]', 8, 'ACTIVO', '2026-02-19 20:36:08', '2026-02-19 20:36:08');
 
 -- --------------------------------------------------------
 
@@ -299,7 +355,8 @@ INSERT INTO `usuarios` (`documento`, `nombre`, `correo`, `password`, `fecha_regi
 (5, 'Alexandra Barreto', 'sistemas@umit.com.co', '$2a$10$cq9YEmZbrVwvFX6yf1QMJeOsQ3/IrVcalJ6mhfgbpVk2kRevjyutq', '2025-12-16 19:50:56', 0, 'ACTIVO', NULL, NULL, 'ADMINISTRADOR'),
 (6, 'daniela ', 'dmm@gmail.com', '$2a$10$0W3u.YphdEYAwvd2jKLqEepDZDxTDDuhhw5fSYtMnB7PeaQbOn4Xi', '2025-12-17 20:58:46', 0, 'ACTIVO', NULL, NULL, 'ADMINISTRADOR'),
 (11111111, 'prueba01', 'prueba1@gmail.com', '$2a$10$lDMnxm08UhPxIx2/le20R.hHisHrW.APPLbL2bIFUucwudg3GVlFq', '2026-01-07 20:32:34', 6, 'ACTIVO', NULL, NULL, 'ESTANDAR'),
-(22222222, 'prueba2', 'prueba2@gmail.com', '$2a$10$.O7GZa4RGs5tKwHfFV.1ku7T9W2ENMZ3X6bZxE1A7MlsUKdTIJDpq', '2026-01-07 20:46:32', 6, 'ACTIVO', NULL, NULL, 'ESTANDAR');
+(22222222, 'prueba2', 'prueba2@gmail.com', '$2a$10$.O7GZa4RGs5tKwHfFV.1ku7T9W2ENMZ3X6bZxE1A7MlsUKdTIJDpq', '2026-01-07 20:46:32', 6, 'ACTIVO', NULL, NULL, 'ESTANDAR'),
+(33333333, 'prueba3', 'prueba3@gmail.com', '$2a$10$m1VXiIB/kOoZLcsKkR0WLu1B2h6fFf3tfIK2NLTxQUMt2AOJJnX3u', '2026-02-19 20:06:34', 6, 'ACTIVO', NULL, NULL, 'ESTANDAR');
 
 --
 -- Índices para tablas volcadas
@@ -340,7 +397,8 @@ ALTER TABLE `area_usuario`
 --
 ALTER TABLE `destinatarios_envio`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `envio_id` (`envio_id`);
+  ADD KEY `envio_id` (`envio_id`),
+  ADD KEY `estado` (`estado`);
 
 --
 -- Indices de la tabla `email_templates`
@@ -353,7 +411,10 @@ ALTER TABLE `email_templates`
 --
 ALTER TABLE `envios`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `remitente` (`remitente_id`);
+  ADD KEY `remitente` (`remitente_id`),
+  ADD KEY `plantilla` (`plantilla_id`),
+  ADD KEY `idx_envios_estado` (`estado`),
+  ADD KEY `idx_envios_usuario` (`remitente_id`);
 
 --
 -- Indices de la tabla `errores_envio`
@@ -399,19 +460,19 @@ ALTER TABLE `acciones_usuario_envio`
 -- AUTO_INCREMENT de la tabla `activity_logs`
 --
 ALTER TABLE `activity_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=174;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=182;
 
 --
 -- AUTO_INCREMENT de la tabla `areas`
 --
 ALTER TABLE `areas`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT de la tabla `area_usuario`
 --
 ALTER TABLE `area_usuario`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=59;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=65;
 
 --
 -- AUTO_INCREMENT de la tabla `destinatarios_envio`
@@ -423,7 +484,7 @@ ALTER TABLE `destinatarios_envio`
 -- AUTO_INCREMENT de la tabla `envios`
 --
 ALTER TABLE `envios`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
 
 --
 -- AUTO_INCREMENT de la tabla `errores_envio`
@@ -435,7 +496,7 @@ ALTER TABLE `errores_envio`
 -- AUTO_INCREMENT de la tabla `plantillas`
 --
 ALTER TABLE `plantillas`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT de la tabla `remitentes`
@@ -458,7 +519,7 @@ ALTER TABLE `acciones_usuario_envio`
 -- Filtros para la tabla `activity_logs`
 --
 ALTER TABLE `activity_logs`
-  ADD CONSTRAINT `activity_logs_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `usuarios` (`documento`) ON DELETE CASCADE;
+  ADD CONSTRAINT `activity_logs_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `usuarios` (`documento`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Filtros para la tabla `area_usuario`
@@ -468,15 +529,10 @@ ALTER TABLE `area_usuario`
   ADD CONSTRAINT `usuarios` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`documento`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
--- Filtros para la tabla `destinatarios_envio`
---
-ALTER TABLE `destinatarios_envio`
-  ADD CONSTRAINT `destinatarios_envio_ibfk_1` FOREIGN KEY (`envio_id`) REFERENCES `envios` (`id`) ON DELETE CASCADE;
-
---
 -- Filtros para la tabla `envios`
 --
 ALTER TABLE `envios`
+  ADD CONSTRAINT `plantilla` FOREIGN KEY (`plantilla_id`) REFERENCES `plantillas` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `remitente` FOREIGN KEY (`remitente_id`) REFERENCES `usuarios` (`documento`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
