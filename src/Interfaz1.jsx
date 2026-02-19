@@ -3,7 +3,7 @@ import "./Interfaz1.css";
 import { useState,useEffect } from "react";
 import VistaArea from "./components/Areas/VistaAreas";
 import CrearPlantilla from "./components/Plantillas/CrearPlantilla";
-import VerRegistros from "./components/Registros/VerRegistros";
+import VerRegistros from "./components/Administrador/RegistrosActividad";
 import Usuarios from "./components/Administrador/Usuarios";
 import Envios from "./components/Envios/Envios";
 import Areas from "./components/Administrador/Areas";
@@ -62,7 +62,7 @@ function Interfaz1({ onSelect, onLogout, usuario }) {
           setAreas={setAreas}
           cargarAreas={cargarAreas}/>;
 
-      case "ver-registros":
+      case "RegistrosActividad":
         return <VerRegistros usuario={usuario} />;
 
       case "envios":

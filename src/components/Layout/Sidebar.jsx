@@ -76,7 +76,7 @@ export default function Sidebar({
 
         <button className="menu-item" onClick={() => {
             setAreaActiva(null);
-            setVistaActual("ver-registros");
+            setVistaActual("RegistrosActividad");
           }}>
            Ver Registros
         </button>

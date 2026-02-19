@@ -1346,7 +1346,12 @@ app.get('/api/registros/actividad', async (req, res) => {
 
     let query = `
       SELECT 
-        al.*,
+        al.id,
+        al.user_id,
+        al.action,
+        al.description,
+        al.ip_address,
+        al.timestamp,
         u.nombre as user_nombre,
         u.correo as user_correo
       FROM activity_logs al
@@ -1356,25 +1361,21 @@ app.get('/api/registros/actividad', async (req, res) => {
 
     const params = [];
 
-    // Filtro por usuario
     if (userId && userId !== 'todos') {
       query += ' AND al.user_id = ?';
       params.push(userId);
     }
 
-    // Filtro por acción
     if (action && action !== 'todas') {
       query += ' AND al.action = ?';
       params.push(action);
     }
 
-    // Filtro por fecha inicio
     if (fechaInicio) {
       query += ' AND DATE(al.timestamp) >= ?';
       params.push(fechaInicio);
     }
 
-    // Filtro por fecha fin
     if (fechaFin) {
       query += ' AND DATE(al.timestamp) <= ?';
       params.push(fechaFin);
@@ -1384,11 +1385,17 @@ app.get('/api/registros/actividad', async (req, res) => {
 
     const [registros] = await pool.execute(query, params);
 
-    res.json({ success: true, registros });
+    res.json({
+      success: true,
+      registros
+    });
 
   } catch (error) {
     console.error('Error obteniendo registros de actividad:', error);
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 });
 
