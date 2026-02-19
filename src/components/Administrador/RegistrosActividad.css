@@ -1,7 +1,8 @@
 .registros-container {
-  padding: 30px;
+  padding: 30px 10px;
   width: 100%;
   max-width: 100%;
+  min-width: 100%;
   min-height: 100vh;
   background-color: #f3f4f6;
 }
@@ -57,11 +58,12 @@
 
 .tabla-container {
   width: 100%;
+  max-width: 100%;
+  min-width: 100%;
   background-color: white;
   border-radius: 12px;
-  padding: 15px;
+  padding: 20px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  overflow-x: auto;
 }
 
 table {

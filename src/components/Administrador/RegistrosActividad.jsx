@@ -65,7 +65,7 @@ export default function RegistrosActividad() {
 
       <h2>Registros de Actividad</h2>
 
-      {/* 🔎 FILTROS */}
+      {/* FILTROS */}
       <div className="filtros">
 
         <select name="userId" value={filtros.userId} onChange={handleChange}>
@@ -88,19 +88,9 @@ export default function RegistrosActividad() {
           <option value="ACTUALIZAR_AREA">Actualizar Área</option>
         </select>
 
-        <input
-          type="date"
-          name="fechaInicio"
-          value={filtros.fechaInicio}
-          onChange={handleChange}
-        />
+        <input type="date" name="fechaInicio" value={filtros.fechaInicio} onChange={handleChange}/>
 
-        <input
-          type="date"
-          name="fechaFin"
-          value={filtros.fechaFin}
-          onChange={handleChange}
-        />
+        <input type="date" name="fechaFin" value={filtros.fechaFin} onChange={handleChange}/>
 
         <button onClick={handleBuscar}>
           Buscar
