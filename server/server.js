@@ -888,15 +888,42 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
     let total = 0;
 
     for (const row of rows) {
-      const correo = row.Correo || row.correo;
-      if (!correo) continue;
 
-      await conn.execute(
-        `INSERT INTO destinatarios_envio (envio_id, correo, estado, datos_json) VALUES (?, ?, 'pendiente', ?) `,
-        [envioId, correo, JSON.stringify(row)]
-      );
-      total++;
+  const correo = row.Correo || row.correo;
+  if (!correo) continue;
+
+  // 🔥 Transformar fechas y horas Excel
+  for (const key in row) {
+    const value = row[key];
+
+    // Fecha Excel (número grande)
+    if (typeof value === "number" && value > 30000) {
+      const excelDate = new Date((value - 25569) * 86400 * 1000);
+      row[key] = excelDate.toLocaleDateString("es-CO");
     }
+
+    // Hora Excel (decimal entre 0 y 1)
+    else if (typeof value === "number" && value > 0 && value < 1) {
+      const totalSeconds = Math.round(value * 86400);
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      row[key] = `${hours}:${minutes.toString().padStart(2, "0")}`;
+    }
+  }
+
+  await conn.execute(
+    `
+    INSERT INTO destinatarios_envio
+    (envio_id, correo, estado, datos_json)
+    VALUES (?, ?, 'pendiente', ?)
+    `,
+    [
+      envioId,
+      correo,
+      JSON.stringify(row)
+    ]
+  );
+}
 
     //  Estado final
     await conn.execute(
