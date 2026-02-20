@@ -537,7 +537,6 @@ app.post('/api/admin/areas', async (req, res) => {
   }
 });
 
-
 //Editar área
 app.put('/api/admin/areas/:id', async (req, res) => {
   try {
@@ -790,7 +789,6 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
     await conn.beginTransaction();
 
     // VALIDACIÓN REAL DE ACCESO POR ÁREA
-    // 🔹 Obtener rol del usuario
   const [usuarios] = await conn.execute(
     'SELECT rol FROM usuarios WHERE documento = ?',
     [documento]
@@ -808,16 +806,11 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
 
   let plantillaRows;
 
-  // 🔥 SI ES ADMIN → no validar área
+  // SI ES ADMIN → no validar área
   if (rol === 'ADMINISTRADOR') {
 
     const [rows] = await conn.execute(
-      `
-      SELECT id, nom_plantilla, html_content
-      FROM plantillas
-      WHERE id = ?
-      AND estado = 'ACTIVO'
-      `,
+      `SELECT id, nom_plantilla, html_content FROM plantillas WHERE id = ? AND estado = 'ACTIVO'`,
       [plantilla_id]
     );
 
@@ -827,14 +820,7 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
 
     //SI ES USUARIO NORMAL → validar área
     const [rows] = await conn.execute(
-      `
-      SELECT p.id, p.nom_plantilla, p.html_content
-      FROM plantillas p
-      INNER JOIN area_usuario au ON au.id_area = p.area_id
-      WHERE p.id = ?
-      AND au.id_usuario = ?
-      AND p.estado = 'ACTIVO'
-      `,
+      `SELECT p.id, p.nom_plantilla, p.html_content FROM plantillas p INNER JOIN area_usuario au ON au.id_area = p.area_id WHERE p.id = ? AND au.id_usuario = ? AND p.estado = 'ACTIVO' `,
       [plantilla_id, documento]
     );
 
@@ -870,14 +856,12 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
     const estadoInicial = 'pendiente';
 
     const [envioResult] = await conn.execute(
-      `
-      INSERT INTO envios
-      (plantilla_id, remitente_id, tipo, estado, fecha_programada, fecha_envio)
-      VALUES (?, ?, ?, ?, ?, ?)
-      `,
+      `INSERT INTO envios (plantilla_id, remitente_id, asunto, mensaje, tipo, estado, fecha_programada, fecha_envio) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         plantilla_id,
         remitente_id,
+        plantilla.nom_plantilla,
+        plantilla.html_content,
         tipo,
         estadoInicial,
         modoEnvio === 'programado' ? programadoPara : null,
@@ -908,14 +892,9 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
       if (!correo) continue;
 
       await conn.execute(
-        `
-        INSERT INTO destinatarios_envio
-        (envio_id, correo, estado)
-        VALUES (?, ?, 'pendiente')
-        `,
-        [envioId, correo]
+        `INSERT INTO destinatarios_envio (envio_id, correo, estado, datos_json) VALUES (?, ?, 'pendiente', ?) `,
+        [envioId, correo, JSON.stringify(row)]
       );
-
       total++;
     }
 

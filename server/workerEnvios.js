@@ -20,8 +20,7 @@ const procesarEnvios = async () => {
       );
 
       const [destinatarios] = await conn.execute(
-        `SELECT * FROM destinatarios_envio 
-         WHERE envio_id = ? AND estado = 'pendiente'`,
+        `SELECT * FROM destinatarios_envio WHERE envio_id = ? AND estado = 'pendiente'`,
         [envio.id]
       );
 
@@ -31,17 +30,40 @@ const procesarEnvios = async () => {
       for (const dest of destinatarios) {
 
         try {
+          let htmlFinal = envio.mensaje;
+          let asuntoFinal = envio.asunto;
+
+          const datosOriginal = dest.datos_json
+            ? JSON.parse(dest.datos_json)
+            : {};
+
+          // Normalizar claves a minúsculas sin espacios
+          const datos = {};
+
+          for (const key in datosOriginal) {
+            datos[key.trim().toLowerCase()] = datosOriginal[key];
+          }
+
+          // Reemplazo inteligente
+          htmlFinal = htmlFinal.replace(/{{\s*(.*?)\s*}}/g, (match, p1) => {
+            const clave = p1.trim().toLowerCase();
+            return datos[clave] ?? match;
+          });
+
+          asuntoFinal = asuntoFinal.replace(/{{\s*(.*?)\s*}}/g, (match, p1) => {
+            const clave = p1.trim().toLowerCase();
+            return datos[clave] ?? match;
+          });
+
           await enviarCorreo({
             remitente_id: envio.remitente_id,
             to: dest.correo,
-            subject: envio.asunto,
-            html: envio.mensaje
+            subject: asuntoFinal,
+            html: htmlFinal
           });
 
           await conn.execute(
-            `UPDATE destinatarios_envio 
-             SET estado = 'enviado', fecha_envio = NOW()
-             WHERE id = ?`,
+            `UPDATE destinatarios_envio SET estado = 'enviado', fecha_envio = NOW() WHERE id = ?`,
             [dest.id]
           );
 
@@ -50,9 +72,7 @@ const procesarEnvios = async () => {
         } catch (err) {
 
           await conn.execute(
-            `UPDATE destinatarios_envio 
-             SET estado = 'fallido', mensaje_error = ?, intentos = intentos + 1
-             WHERE id = ?`,
+            `UPDATE destinatarios_envio SET estado = 'fallido', mensaje_error = ?, intentos = intentos + 1 WHERE id = ?`,
             [err.message, dest.id]
           );
 
@@ -66,11 +86,7 @@ const procesarEnvios = async () => {
       else if (fallidos > 0) estadoFinal = 'parcial';
 
       await conn.execute(
-        `
-        UPDATE envios
-        SET estado = ?, enviados = ?, fallidos = ?, fecha_fin = NOW()
-        WHERE id = ?
-        `,
+        `UPDATE envios SET estado = ?, enviados = ?, fallidos = ?, fecha_fin = NOW() WHERE id = ? `,
         [estadoFinal, enviados, fallidos, envio.id]
       );
     }
