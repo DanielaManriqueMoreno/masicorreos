@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 19-02-2026 a las 23:40:41
+-- Tiempo de generación: 20-02-2026 a las 16:30:58
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -51,55 +51,6 @@ CREATE TABLE `activity_logs` (
   `timestamp` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
---
--- Volcado de datos para la tabla `activity_logs`
---
-
-INSERT INTO `activity_logs` (`id`, `user_id`, `username`, `action`, `description`, `ip_address`, `timestamp`) VALUES
-(139, 1, 'Usuario', 'CREAR_PLANTILLA', 'Plantilla creada: plantilla 1', '', '2025-12-10 19:33:28'),
-(140, 1, 'hola@gmail.com', 'ENVIO_CORREOS_PLANTILLA_PERSONALIZADA', 'Plantilla: plantilla 1, Procesados: 4, Enviados: 2, Programados: 0, Fallidos: 2', '', '2025-12-10 19:40:07'),
-(141, 2, 'curiosidades318511@gmail.com', 'SOLICITAR_RECUPERACION_PASSWORD', 'Solicitud de recuperación de contraseña', '', '2025-12-10 19:52:37'),
-(142, 2, 'curiosidades318511@gmail.com', 'RESET_PASSWORD', 'Contraseña restablecida exitosamente', '', '2025-12-10 19:53:29'),
-(143, 2, 'curiosidades318511@gmail.com', 'SOLICITAR_RECUPERACION_PASSWORD', 'Solicitud de recuperación de contraseña', '', '2025-12-10 19:55:25'),
-(144, 2, 'curiosidades318511@gmail.com', 'RESET_PASSWORD', 'Contraseña restablecida exitosamente', '', '2025-12-10 19:56:01'),
-(145, 2, 'curiosidades318511@gmail.com', 'SOLICITAR_RECUPERACION_PASSWORD', 'Solicitud de recuperación de contraseña', '', '2025-12-10 19:57:29'),
-(146, 2, 'curiosidades318511@gmail.com', 'SOLICITAR_RECUPERACION_PASSWORD', 'Solicitud de recuperación de contraseña', '', '2025-12-10 19:59:23'),
-(147, 2, 'curiosidades318511@gmail.com', 'RESET_PASSWORD', 'Contraseña restablecida exitosamente', '', '2025-12-10 20:03:05'),
-(148, 2, 'Usuario', 'CREAR_PLANTILLA', 'Plantilla creada: daniela', '', '2025-12-10 20:34:52'),
-(149, 2, 'curiosidades318511@gmail.com', 'ENVIO_CORREOS_PLANTILLA_PERSONALIZADA', 'Plantilla: daniela, Procesados: 2, Enviados: 2, Programados: 0, Fallidos: 0', '', '2025-12-10 20:36:11'),
-(150, 2, 'Usuario', 'ELIMINAR_PLANTILLA', 'Plantilla eliminada: daniela', '', '2025-12-10 20:47:06'),
-(151, 3, 'jefe@gmail.com', 'ENVIO_CORREOS_CITAS', 'Procesados: 2, Enviados: 2, Programados: 0, Fallidos: 0', '', '2025-12-16 17:59:08'),
-(152, 3, 'Usuario', 'CREAR_PLANTILLA', 'Plantilla creada: plantilla ejemplo', '', '2025-12-16 18:01:39'),
-(153, 3, 'jefe@gmail.com', 'ENVIO_CORREOS_PLANTILLA_PERSONALIZADA', 'Plantilla: plantilla ejemplo, Procesados: 2, Enviados: 2, Programados: 0, Fallidos: 0', '', '2025-12-16 18:04:58'),
-(154, 3, 'jefe@gmail.com', 'ENVIO_CORREOS_DENGUE', 'Procesados: 2, Enviados: 2, Programados: 0, Fallidos: 0', '', '2025-12-16 18:06:56'),
-(155, 4, 'Usuario', 'CREAR_PLANTILLA', 'Plantilla creada: Plantilla  ingeniera', '', '2025-12-16 19:38:41'),
-(156, 4, 'Dani123', 'ENVIO_CORREOS_PLANTILLA_PERSONALIZADA', 'Plantilla: Plantilla  ingeniera, Procesados: 2, Enviados: 2, Programados: 0, Fallidos: 0', '', '2025-12-16 19:44:22'),
-(157, 5, 'sistemas@umit.com.co', 'SOLICITAR_RECUPERACION_PASSWORD', 'Solicitud de recuperación de contraseña', '', '2025-12-16 19:51:46'),
-(158, 5, 'sistemas@umit.com.co', 'RESET_PASSWORD', 'Contraseña restablecida exitosamente', '', '2025-12-16 19:53:03'),
-(159, 4, 'Dani123', 'ENVIO_CORREOS_CITAS', 'Procesados: 2, Enviados: 2, Programados: 0, Fallidos: 0', '', '2025-12-16 20:36:46'),
-(160, 4, 'Dani123', 'ENVIO_CORREOS_DENGUE', 'Procesados: 2, Enviados: 0, Programados: 0, Fallidos: 2', '', '2025-12-16 20:41:10'),
-(161, 4, 'Dani123', 'ENVIO_CORREOS_DENGUE', 'Procesados: 2, Enviados: 2, Programados: 0, Fallidos: 0', '', '2025-12-16 20:42:30'),
-(162, 4, 'Dani123', 'ENVIO_CORREOS_DENGUE', 'Procesados: 2, Enviados: 2, Programados: 0, Fallidos: 0', '', '2025-12-16 20:42:49'),
-(163, 6, 'Usuario', 'CREAR_PLANTILLA', 'Plantilla creada: prueba1', '', '2026-01-30 01:54:12'),
-(164, 6, 'Usuario', 'CREAR_PLANTILLA', 'Plantilla creada: prueba2', '', '2026-01-30 02:51:20'),
-(165, 6, 'Usuario', 'CREAR_PLANTILLA', 'Plantilla creada: prueba1', '', '2026-01-30 16:47:12'),
-(166, 6, 'Usuario', 'CREAR_PLANTILLA', 'Plantilla creada: prueba2', '', '2026-01-30 16:52:32'),
-(167, 6, 'Usuario', 'CREAR_PLANTILLA', 'Plantilla creada: plantilla 1', '', '2026-02-02 21:08:01'),
-(168, 6, 'Usuario', 'CREAR_PLANTILLA', 'Plantilla creada: prueba1', '', '2026-02-02 22:32:38'),
-(169, 6, 'Usuario', 'ACTUALIZAR_PLANTILLA', 'Plantilla actualizada: 3', '', '2026-02-05 17:08:44'),
-(170, 6, 'Usuario', 'ACTUALIZAR_PLANTILLA', 'Plantilla actualizada: 3', '', '2026-02-05 19:48:39'),
-(171, 6, 'Usuario', 'ACTUALIZAR_PLANTILLA', 'Plantilla actualizada: 3', '', '2026-02-05 20:00:01'),
-(172, 6, 'Usuario', 'ACTUALIZAR_PLANTILLA', 'Plantilla actualizada: 3', '', '2026-02-06 14:02:23'),
-(173, 6, 'Usuario', 'ACTUALIZAR_PLANTILLA', 'Plantilla actualizada: 3', '', '2026-02-06 14:05:41'),
-(174, 6, '', 'Usuario', 'CREAR_PLANTILLA', NULL, '2026-02-19 20:36:08'),
-(175, 1, '', 'Administrador', 'CREAR_AREA', NULL, '2026-02-19 20:36:31'),
-(176, 6, '', 'Usuario', 'ENVIO_CORREOS', NULL, '2026-02-19 20:38:50'),
-(177, 6, 'Desconocido', 'Usuario', 'ENVIO_CORREOS', NULL, '2026-02-19 20:43:28'),
-(178, 1, 'Desconocido', 'Administrador', 'CREAR_AREA', NULL, '2026-02-19 20:43:39'),
-(179, 6, 'Desconocido', 'Usuario', 'ENVIO_CORREOS', NULL, '2026-02-19 21:51:54'),
-(180, 6, 'Desconocido', 'Usuario', 'ENVIO_CORREOS', NULL, '2026-02-19 21:59:51'),
-(181, 6, 'Desconocido', 'Usuario', 'ENVIO_CORREOS', NULL, '2026-02-19 22:00:27');
-
 -- --------------------------------------------------------
 
 --
@@ -122,9 +73,7 @@ INSERT INTO `areas` (`id`, `nombre`, `estado`) VALUES
 (7, 'Talento Humano', 'ACTIVO'),
 (8, 'Contabilidad', 'ACTIVO'),
 (9, 'Radicacion', 'ACTIVO'),
-(10, 'Sistemas', 'ACTIVO'),
-(12, 'area1', 'ACTIVO'),
-(13, 'area2', 'ACTIVO');
+(10, 'Sistemas', 'ACTIVO');
 
 -- --------------------------------------------------------
 
@@ -167,6 +116,48 @@ CREATE TABLE `destinatarios_envio` (
   `fecha_envio` datetime DEFAULT NULL,
   `fecha_apertura` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `destinatarios_envio`
+--
+
+INSERT INTO `destinatarios_envio` (`id`, `envio_id`, `correo`, `estado`, `intentos`, `mensaje_error`, `fecha_envio`, `fecha_apertura`) VALUES
+(1, 30, 'danielamanrique.mo@gmail.com', 'fallido', 1, 'Invalid login: 535-5.7.8 Username and Password not accepted. For more information, go to\n535 5.7.8  https://support.google.com/mail/?p=BadCredentials 71dfb90a1353d-56769ab0762sm15395143e0c.4 - gsmtp', NULL, NULL),
+(2, 30, 'danielamanrique.mo@gmail.com', 'fallido', 1, 'Invalid login: 535-5.7.8 Username and Password not accepted. For more information, go to\n535 5.7.8  https://support.google.com/mail/?p=BadCredentials 71dfb90a1353d-56769ab0762sm15395182e0c.4 - gsmtp', NULL, NULL),
+(3, 30, 'danielamanrique.mo@gmail.com', 'fallido', 1, 'Invalid login: 535-5.7.8 Username and Password not accepted. For more information, go to\n535 5.7.8  https://support.google.com/mail/?p=BadCredentials ada2fe7eead31-5fde8ae2c86sm16115241137.11 - gsmtp', NULL, NULL),
+(4, 30, 'danielamanrique.mo@gmail.com', 'fallido', 1, 'Invalid login: 535-5.7.8 Username and Password not accepted. For more information, go to\n535 5.7.8  https://support.google.com/mail/?p=BadCredentials 71dfb90a1353d-5674c01d31asm17876219e0c.9 - gsmtp', NULL, NULL),
+(5, 30, 'danielamanrique.mo@gmail.com', 'fallido', 1, 'Invalid login: 535-5.7.8 Username and Password not accepted. For more information, go to\n535 5.7.8  https://support.google.com/mail/?p=BadCredentials 71dfb90a1353d-56767276f8bsm16788107e0c.14 - gsmtp', NULL, NULL),
+(6, 30, 'danielamanrique.mo@gmail.com', 'fallido', 1, 'Invalid login: 535-5.7.8 Username and Password not accepted. For more information, go to\n535 5.7.8  https://support.google.com/mail/?p=BadCredentials a1e0cc1a2514c-94afd1ab720sm16312356241.4 - gsmtp', NULL, NULL),
+(7, 30, 'danielamanrique.mo@gmail.com', 'fallido', 1, 'Invalid login: 535-5.7.8 Username and Password not accepted. For more information, go to\n535 5.7.8  https://support.google.com/mail/?p=BadCredentials 71dfb90a1353d-5674c2429c9sm17705548e0c.16 - gsmtp', NULL, NULL),
+(8, 30, 'danielamanrique.mo@gmail.com', 'fallido', 1, 'Invalid login: 535-5.7.8 Username and Password not accepted. For more information, go to\n535 5.7.8  https://support.google.com/mail/?p=BadCredentials 71dfb90a1353d-5674c20a6b8sm17471467e0c.10 - gsmtp', NULL, NULL),
+(9, 30, 'danielamanrique.mo@gmail.com', 'fallido', 1, 'Invalid login: 535-5.7.8 Username and Password not accepted. For more information, go to\n535 5.7.8  https://support.google.com/mail/?p=BadCredentials a1e0cc1a2514c-94afd1ab72bsm17490859241.5 - gsmtp', NULL, NULL),
+(10, 31, 'danielamanrique.mo@gmail.com', 'fallido', 1, 'Invalid login: 535-5.7.8 Username and Password not accepted. For more information, go to\n535 5.7.8  https://support.google.com/mail/?p=BadCredentials ada2fe7eead31-5fe153b3231sm14104157137.5 - gsmtp', NULL, NULL),
+(11, 31, 'danielamanrique.mo@gmail.com', 'fallido', 1, 'Invalid login: 535-5.7.8 Username and Password not accepted. For more information, go to\n535 5.7.8  https://support.google.com/mail/?p=BadCredentials a1e0cc1a2514c-94afd1ab72bsm17490926241.5 - gsmtp', NULL, NULL),
+(12, 31, 'danielamanrique.mo@gmail.com', 'fallido', 1, 'Invalid login: 535-5.7.8 Username and Password not accepted. For more information, go to\n535 5.7.8  https://support.google.com/mail/?p=BadCredentials 71dfb90a1353d-5674bfeff10sm18214650e0c.8 - gsmtp', NULL, NULL),
+(13, 31, 'danielamanrique.mo@gmail.com', 'fallido', 1, 'Invalid login: 535-5.7.8 Username and Password not accepted. For more information, go to\n535 5.7.8  https://support.google.com/mail/?p=BadCredentials 71dfb90a1353d-5674c01d31asm17876568e0c.9 - gsmtp', NULL, NULL),
+(14, 31, 'danielamanrique.mo@gmail.com', 'fallido', 1, 'Invalid login: 535-5.7.8 Username and Password not accepted. For more information, go to\n535 5.7.8  https://support.google.com/mail/?p=BadCredentials ada2fe7eead31-5fde87fb7f5sm16021277137.2 - gsmtp', NULL, NULL),
+(15, 31, 'danielamanrique.mo@gmail.com', 'fallido', 1, 'Invalid login: 535-5.7.8 Username and Password not accepted. For more information, go to\n535 5.7.8  https://support.google.com/mail/?p=BadCredentials a1e0cc1a2514c-94afd1f1f82sm16696922241.8 - gsmtp', NULL, NULL),
+(16, 31, 'danielamanrique.mo@gmail.com', 'fallido', 1, 'Invalid login: 535-5.7.8 Username and Password not accepted. For more information, go to\n535 5.7.8  https://support.google.com/mail/?p=BadCredentials 71dfb90a1353d-5674c25ecdesm17476344e0c.20 - gsmtp', NULL, NULL),
+(17, 31, 'danielamanrique.mo@gmail.com', 'fallido', 1, 'Invalid login: 535-5.7.8 Username and Password not accepted. For more information, go to\n535 5.7.8  https://support.google.com/mail/?p=BadCredentials ada2fe7eead31-5fde8adf700sm16761024137.12 - gsmtp', NULL, NULL),
+(18, 31, 'danielamanrique.mo@gmail.com', 'fallido', 1, 'Invalid login: 535-5.7.8 Username and Password not accepted. For more information, go to\n535 5.7.8  https://support.google.com/mail/?p=BadCredentials ada2fe7eead31-5fde87fc73esm16229303137.1 - gsmtp', NULL, NULL),
+(19, 32, 'danielamanrique.mo@gmail.com', 'enviado', 0, NULL, '2026-02-20 08:51:08', NULL),
+(20, 32, 'danielamanrique.mo@gmail.com', 'enviado', 0, NULL, '2026-02-20 08:51:09', NULL),
+(21, 32, 'danielamanrique.mo@gmail.com', 'enviado', 0, NULL, '2026-02-20 08:51:10', NULL),
+(22, 32, 'danielamanrique.mo@gmail.com', 'enviado', 0, NULL, '2026-02-20 08:51:11', NULL),
+(23, 32, 'danielamanrique.mo@gmail.com', 'enviado', 0, NULL, '2026-02-20 08:51:13', NULL),
+(24, 32, 'danielamanrique.mo@gmail.com', 'enviado', 0, NULL, '2026-02-20 08:51:14', NULL),
+(25, 32, 'danielamanrique.mo@gmail.com', 'enviado', 0, NULL, '2026-02-20 08:51:16', NULL),
+(26, 32, 'danielamanrique.mo@gmail.com', 'enviado', 0, NULL, '2026-02-20 08:51:17', NULL),
+(27, 32, 'danielamanrique.mo@gmail.com', 'enviado', 0, NULL, '2026-02-20 08:51:18', NULL),
+(28, 33, 'danielamanrique.mo@gmail.com', 'enviado', 0, NULL, '2026-02-20 08:51:18', NULL),
+(29, 33, 'danielamanrique.mo@gmail.com', 'enviado', 0, NULL, '2026-02-20 08:51:20', NULL),
+(30, 33, 'danielamanrique.mo@gmail.com', 'enviado', 0, NULL, '2026-02-20 08:51:21', NULL),
+(31, 33, 'danielamanrique.mo@gmail.com', 'enviado', 0, NULL, '2026-02-20 08:51:23', NULL),
+(32, 33, 'danielamanrique.mo@gmail.com', 'enviado', 0, NULL, '2026-02-20 08:51:24', NULL),
+(33, 33, 'danielamanrique.mo@gmail.com', 'enviado', 0, NULL, '2026-02-20 08:51:25', NULL),
+(34, 33, 'danielamanrique.mo@gmail.com', 'enviado', 0, NULL, '2026-02-20 08:51:27', NULL),
+(35, 33, 'danielamanrique.mo@gmail.com', 'enviado', 0, NULL, '2026-02-20 08:51:28', NULL),
+(36, 33, 'danielamanrique.mo@gmail.com', 'enviado', 0, NULL, '2026-02-20 08:51:30', NULL);
 
 -- --------------------------------------------------------
 
@@ -225,7 +216,7 @@ CREATE TABLE `envios` (
 --
 
 INSERT INTO `envios` (`id`, `tipo`, `remitente_id`, `plantilla_id`, `asunto`, `mensaje`, `archivo_adjunto`, `cantidad_destinatarios`, `estado`, `total_destinatarios`, `enviados`, `fallidos`, `fecha_creacion`, `fecha_programada`, `fecha_inicio`, `fecha_fin`, `fecha_envio`) VALUES
-(3, 'INMEDIATO', 1, 7, NULL, NULL, NULL, 0, '', 0, 0, 0, '2026-02-18 16:23:49', NULL, NULL, NULL, '2026-02-18 16:23:49'),
+(3, '', 1, 7, NULL, NULL, NULL, 0, '', 0, 0, 0, '2026-02-18 16:23:49', NULL, NULL, NULL, '2026-02-18 16:23:49'),
 (4, 'INMEDIATO', 1, 7, NULL, NULL, NULL, 0, '', 0, 0, 0, '2026-02-18 16:23:52', NULL, NULL, NULL, '2026-02-18 16:23:52'),
 (5, 'INMEDIATO', 1, 7, NULL, NULL, NULL, 0, '', 0, 0, 0, '2026-02-18 16:23:53', NULL, NULL, NULL, '2026-02-18 16:23:53'),
 (6, 'INMEDIATO', 1, 7, NULL, NULL, NULL, 0, '', 0, 0, 0, '2026-02-18 16:23:54', NULL, NULL, NULL, '2026-02-18 16:23:54'),
@@ -250,7 +241,11 @@ INSERT INTO `envios` (`id`, `tipo`, `remitente_id`, `plantilla_id`, `asunto`, `m
 (26, 'INMEDIATO', 1, 7, NULL, NULL, NULL, 0, '', 0, 0, 0, '2026-02-19 15:43:23', NULL, NULL, NULL, '2026-02-19 15:43:23'),
 (27, 'INMEDIATO', 1, 7, NULL, NULL, NULL, 0, '', 0, 0, 0, '2026-02-19 16:51:49', NULL, NULL, NULL, '2026-02-19 16:51:49'),
 (28, 'INMEDIATO', 1, 7, NULL, NULL, NULL, 0, '', 0, 0, 0, '2026-02-19 16:59:46', NULL, NULL, NULL, '2026-02-19 16:59:46'),
-(29, 'INMEDIATO', 1, 7, NULL, NULL, NULL, 0, '', 0, 0, 0, '2026-02-19 17:00:22', NULL, NULL, NULL, '2026-02-19 17:00:22');
+(29, 'INMEDIATO', 1, 7, NULL, NULL, NULL, 0, '', 0, 0, 0, '2026-02-19 17:00:22', NULL, NULL, NULL, '2026-02-19 17:00:22'),
+(30, 'INMEDIATO', 1, 7, NULL, NULL, NULL, 0, 'fallido', 9, 0, 9, '2026-02-20 08:13:27', NULL, '2026-02-20 08:13:32', '2026-02-20 08:13:38', '2026-02-20 08:13:27'),
+(31, 'INMEDIATO', 1, 7, NULL, NULL, NULL, 0, 'fallido', 9, 0, 9, '2026-02-20 08:13:28', NULL, '2026-02-20 08:13:38', '2026-02-20 08:13:43', '2026-02-20 08:13:28'),
+(32, 'INMEDIATO', 1, 7, NULL, NULL, NULL, 0, 'completado', 9, 9, 0, '2026-02-20 08:51:02', NULL, '2026-02-20 08:51:06', '2026-02-20 08:51:18', '2026-02-20 08:51:02'),
+(33, 'INMEDIATO', 1, 7, NULL, NULL, NULL, 0, 'completado', 9, 8, 0, '2026-02-20 08:51:03', NULL, '2026-02-20 08:51:19', '2026-02-20 08:51:30', '2026-02-20 08:51:03');
 
 -- --------------------------------------------------------
 
@@ -322,7 +317,7 @@ CREATE TABLE `remitentes` (
 --
 
 INSERT INTO `remitentes` (`id`, `nombre`, `correo`, `smtp_host`, `smtp_port`, `secure`, `password_app`, `estado`, `created_at`) VALUES
-(1, 'Micita Oficial', 'micita@umit.com.co', 'smtp.gmail.com', 465, 1, 'fndyutjqejrndxth', 'activo', '2026-02-16 16:33:27');
+(1, 'correo de prueba', 'pruebasmasicorreos@gmail.com', 'smtp.gmail.com', 465, 1, 'tbsetdqyymwwbiye', 'activo', '2026-02-16 16:33:27');
 
 -- --------------------------------------------------------
 
@@ -460,7 +455,7 @@ ALTER TABLE `acciones_usuario_envio`
 -- AUTO_INCREMENT de la tabla `activity_logs`
 --
 ALTER TABLE `activity_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=182;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT de la tabla `areas`
@@ -478,13 +473,13 @@ ALTER TABLE `area_usuario`
 -- AUTO_INCREMENT de la tabla `destinatarios_envio`
 --
 ALTER TABLE `destinatarios_envio`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
 
 --
 -- AUTO_INCREMENT de la tabla `envios`
 --
 ALTER TABLE `envios`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=34;
 
 --
 -- AUTO_INCREMENT de la tabla `errores_envio`
