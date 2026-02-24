@@ -1,4 +1,5 @@
 import pool from './database.js';
+import generarPlantilla from './emailTemplates.js';
 import { enviarCorreo } from './mailer.js';
 
 const procesarEnvios = async () => {
@@ -54,12 +55,12 @@ const procesarEnvios = async () => {
             const clave = p1.trim().toLowerCase();
             return datos[clave] ?? match;
           });
-
+          const htmlConLayout = generarPlantilla(htmlFinal);
           await enviarCorreo({
             remitente_id: envio.remitente_id,
             to: dest.correo,
             subject: asuntoFinal,
-            html: htmlFinal
+            html: htmlConLayout
           });
 
           await conn.execute(

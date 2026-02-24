@@ -1,5 +1,19 @@
 // server.js - Servidor Express
 import nodemailer from 'nodemailer';
+import express from 'express';
+import fs from 'fs';
+import cors from 'cors';
+import XLSX from 'xlsx';
+import dotenv from 'dotenv';
+import path from 'path';
+import upload from '../src/components/Envios/utils/multer.js';
+import { fileURLToPath } from 'url';
+import pool, { testConnection } from './database.js';
+import bcrypt from 'bcryptjs';
+import multer from 'multer';
+import crypto from 'crypto';
+import cron from 'node-cron';
+import generarPlantilla from './emailTemplates.js';
 
 const enviarCorreo = async ({ remitente_id, to, subject, html }) => {
 
@@ -37,26 +51,10 @@ const enviarCorreo = async ({ remitente_id, to, subject, html }) => {
   });
 };
 
-import express from 'express';
-import fs from 'fs';
-import cors from 'cors';
-import XLSX from 'xlsx';
-import dotenv from 'dotenv';
-import path from 'path';
-import upload from '../src/components/Envios/utils/multer.js';
-import { fileURLToPath } from 'url';
-
 // Cargar .env PRIMERO antes de importar otros módulos
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, '.env') });
-
-// Ahora importar los demás módulos
-import pool, { testConnection } from './database.js';
-import bcrypt from 'bcryptjs';
-import multer from 'multer';
-import crypto from 'crypto';
-import cron from 'node-cron';
 
 const logActivity = async (userId, action, description, req = null) => {
     try {
@@ -771,7 +769,7 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
       programadoPara
     } = req.body;
 
-    // 🧪 Validaciones básicas
+    // Validaciones básicas
     if (!plantilla_id || !remitente_id) {
       return res.status(400).json({
         ok: false,
