@@ -10,11 +10,11 @@ const EditorPlantilla = ({
 
   // Mantener sincronizado el HTML con el editor
   useEffect(() => {
-    if (editorRef.current && contenidoVisual !== editorRef.current.innerHTML) {
-      editorRef.current.innerHTML = contenidoVisual || '';
+    if (editorRef.current && contenidoVisual === '') {
+      editorRef.current.innerHTML = '';
     }
   }, [contenidoVisual]);
-
+  
   const generarPreview = () => {
     let html = contenidoVisual || '';
 
@@ -36,13 +36,7 @@ const EditorPlantilla = ({
         <div className="editor-section">
           <h2>✉️ Mensaje</h2>
 
-          <div
-            contentEditable
-            className="editor-textarea"
-            onInput={handleVisualChange}
-            suppressContentEditableWarning
-          />
-
+          <div contentEditable ref={editorRef} className="editor-textarea" onInput={handleVisualChange} suppressContentEditableWarning />
           <small className="editor-tip">
             Usa campos como <code>{'{{nombre}}'}</code>, <code>{'{{fecha}}'}</code>.
             El sistema los detecta automáticamente.

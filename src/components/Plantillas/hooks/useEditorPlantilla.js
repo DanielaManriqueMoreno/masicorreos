@@ -5,7 +5,7 @@ export default function useEditorPlantilla() {
   const [contenidoVisual, setContenidoVisual] = useState('');
 
   const handleVisualChange = (e) => {
-    setContenidoVisual(e.target.innerText);
+    setContenidoVisual(e.currentTarget.innerHTML);
   };
 
   const resetEditor = () => {

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import {notifySuccess, notifyError} from "../../utils/notificaciones";
 import axios from "axios";
 import "./VistaAreas.css"; 
 
@@ -53,9 +54,7 @@ function VistaArea({ areaId, nombreArea }) {
       ) : (
         <div className="plantillas-list">
           {plantillas.map((p) => (
-            <div
-              className="plantilla-card"
-              key={p.id}
+            <div className="plantilla-card" key={p.id}
               onClick={() =>
                 setPlantillaSeleccionada({
                   id: p.id,
@@ -105,11 +104,11 @@ function VistaArea({ areaId, nombreArea }) {
               const userId = getUserId();
 
               if (!userId) {
-                alert("No se pudo identificar el usuario");
+                notifyError("No se pudo identificar el usuario ❌");
                 return;
               }
 
-              await axios.put(
+              const res = await axios.put(
                 `/api/templates/${plantillaActualizada.id}`,
                 {
                   userId,
@@ -118,23 +117,31 @@ function VistaArea({ areaId, nombreArea }) {
                 }
               );
 
-              setPlantillas(prev =>
-                prev.map(p =>
-                  p.id === plantillaActualizada.id
-                    ? {
-                        ...p,
-                        descripcion: plantillaActualizada.descripcion,
-                        html_content: plantillaActualizada.contenido
-                      }
-                    : p
-                )
-              );
+              if (res.status === 200) {
 
-              setPlantillaEditando(null);
+                setPlantillas(prev =>
+                  prev.map(p =>
+                    p.id === plantillaActualizada.id
+                      ? {
+                          ...p,
+                          descripcion: plantillaActualizada.descripcion,
+                          html_content: plantillaActualizada.contenido
+                        }
+                      : p
+                  )
+                );
+
+                notifySuccess("Plantilla actualizada correctamente 📄✅");
+
+                setPlantillaEditando(null);
+
+              } else {
+                notifyError("Error al actualizar plantilla");
+              }
 
             } catch (error) {
               console.error("Error guardando plantilla:", error);
-              alert("No se pudo guardar la plantilla");
+              notifyError("No se pudo guardar la plantilla ❌");
             }
           }}
         />

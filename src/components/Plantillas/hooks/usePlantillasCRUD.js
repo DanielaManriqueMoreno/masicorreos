@@ -54,17 +54,14 @@ export function usePlantillasCRUD() {
         ? `${API_URL}/${plantillaEditando}`
         : API_URL;
 
-      // 🔥 ADAPTAMOS LOS NOMBRES A LO QUE EL BACKEND ESPERA
       const bodyEnviar = {
-        userId: payload.userId,               // id del usuario
-        nombre: payload.nombre,               // nombre de la plantilla
-        descripcion: payload.descripcion || '', // descripción opcional
-        htmlContent: payload.htmlContent,     // contenido HTML
-        variables: payload.variables || [],    // variables detectadas
-        area_id: payload.area_id              // área seleccionada
+        userId: payload.userId,
+        nombre: payload.nombre,
+        descripcion: payload.descripcion || '',
+        htmlContent: payload.htmlContent,
+        variables: payload.variables || [],
+        area_id: payload.area_id
       };
-
-      console.log("Enviando al backend:", bodyEnviar);
 
       const resp = await fetch(url, {
         method,
@@ -72,18 +69,30 @@ export function usePlantillasCRUD() {
         body: JSON.stringify(bodyEnviar)
       });
 
+      const data = await resp.json().catch(() => ({}));
+
       if (!resp.ok) {
-        // intentar leer el mensaje de error del backend
-        const errorData = await resp.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Error al guardar plantilla');
+        return {
+          success: false,
+          message: data.message || 'Error al guardar plantilla'
+        };
       }
 
       setPlantillaEditando(null);
-      alert("Plantilla guardada exitosamente ✅");
+
+      return {
+        success: true,
+        data
+      };
 
     } catch (error) {
       console.error('Error guardarPlantilla:', error);
-      alert(error.message); // mostramos alerta rápida si falla
+
+      return {
+        success: false,
+        message: error.message || 'Error del servidor'
+      };
+
     } finally {
       setCargando(false);
     }
