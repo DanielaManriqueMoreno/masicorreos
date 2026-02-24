@@ -1,5 +1,6 @@
 import useEnvios from './useEnvios';
 import { toast } from 'react-toastify';
+import { useRef } from "react";
 import './Envios.css';
 
 export default function Envios({ user }) {
@@ -25,7 +26,7 @@ export default function Envios({ user }) {
     handleArchivo,
     enviarCorreos
   } = useEnvios(user);
-
+  const fileInputRef = useRef(null);
   const handleSubmit = async () => {
 
     if (!remitente_id || !plantilla_id || !archivo) {
@@ -47,6 +48,9 @@ export default function Envios({ user }) {
             ? "Envío programado correctamente 📅"
             : "Correos enviados correctamente ✅"
         );
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
       } else {
         toast.error(response?.message || "Error al procesar el envío ❌");
       }
@@ -62,10 +66,7 @@ export default function Envios({ user }) {
       <h2>Envío de Correos</h2>
 
       <label>Tipo de envío</label>
-      <select
-        value={modoEnvio}
-        onChange={(e) => setModoEnvio(e.target.value)}
-      >
+      <select value={modoEnvio} onChange={(e) => setModoEnvio(e.target.value)}>
         <option value="inmediato">Enviar ahora</option>
         <option value="programado">Programado</option>
       </select>
@@ -111,6 +112,7 @@ export default function Envios({ user }) {
       <input
         type="file"
         accept=".xlsx"
+        ref={fileInputRef}
         onChange={handleArchivo}
       />
 
