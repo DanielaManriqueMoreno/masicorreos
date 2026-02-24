@@ -1,4 +1,5 @@
 import "./ModalVistaPlantilla.css";
+import { notifyError, notifyWarning, notifySuccess } from "../../utils/notificaciones";
 import { useUsuario } from "../../context/UserContext.jsx";
 
 export default function ModalVistaPlantilla({
@@ -18,32 +19,33 @@ export default function ModalVistaPlantilla({
           <h2>{plantilla.nom_plantilla}</h2>
         </header>
 
-        <p className="modal-description">
-          {plantilla.descripcion}
-        </p>
-
-        <div
-          className="modal-preview"
-          dangerouslySetInnerHTML={{ __html: plantilla.html_content }}
-        />
+        <p className="modal-description">{plantilla.descripcion}</p>
+        <div className="modal-preview" dangerouslySetInnerHTML={{ __html: plantilla.html_content }} />
 
         <footer className="modal-actions">
           <button className="btn-edit" onClick={onEditar}>
             ✏️ Editar
           </button>
 
-          <button
-            className="btn-download"
-            onClick={() => {
+          <button className="btn-download" onClick={() => {
               if (!usuario) {
-                console.error("Usuario no disponible");
+                notifyError("No se pudo identificar el usuario ❌");
                 return;
               }
 
-              const API_URL = "http://localhost:3001"; 
+              const API_URL = "http://localhost:3001";
 
-              window.open(
-                `${API_URL}/api/templates/${plantilla.id}/download-excel`,"_blank");
+              try {
+                window.open(
+                  `${API_URL}/api/templates/${plantilla.id}/download-excel`,
+                  "_blank"
+                );
+
+                notifySuccess("Descargando archivo Excel 📥");
+
+              } catch (error) {
+                notifyError("Error al descargar el archivo");
+              }
             }}
           >
             📥 Descargar Excel

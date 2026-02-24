@@ -4,7 +4,7 @@ import './CrearPlantilla.css';
 import PlantillaForm from './PlantillaForm';
 import EditorPlantilla from './EditorPlantilla';
 import useEditorPlantilla from "./hooks/useEditorPlantilla";
-
+import { notifySuccess, notifyError, notifyWarning } from "../../utils/notificaciones";
 import { usePlantillasCRUD } from "./hooks/usePlantillasCRUD";
 import { useVariablesPlantillas } from './hooks/useVariablesPlantillas';
 import { extraerVariablesDesdeTexto } from './utils/editorhtmlutils';
@@ -35,11 +35,11 @@ const CrearPlantilla = ({ onVolver, usuario }) => {
         if (Array.isArray(data)) {
           setAreas(data);
         } else {
-          console.error("La respuesta de áreas no es un array");
+          notifyError("La respuesta de áreas no es un array");
           setAreas([]);
         }
       } catch (error) {
-        console.error("Error cargando áreas:", error);
+        notifyError("Error cargando áreas: " + error.message);
         setAreas([]);
       }
     };
@@ -58,27 +58,58 @@ const CrearPlantilla = ({ onVolver, usuario }) => {
 
   /* ================= GUARDAR ================= */
   const handleGuardarPlantilla = async () => {
-    if (!usuario?.documento) return alert("No se encontró usuario");
-    if (!formData.nombre) return alert("Ingrese un nombre para la plantilla");
-    if (!formData.area_id) return alert("Seleccione un área");
 
-    const result = await guardarPlantilla({
-      userId: usuario.documento,
-      nombre: formData.nombre,
-      descripcion: formData.descripcion,
-      htmlContent: editor.contenidoVisual,
-      variables: formData.variables,
-      area_id: formData.area_id
-    });
+    if (!usuario?.documento) {
+      notifyError("No se encontró usuario ❌");
+      return;
+    }
 
-    setFormData({
-      nombre: '',
-      descripcion: '',
-      area_id: '',
-      variables: []
-    });
+    if (!formData.nombre.trim()) {
+      notifyWarning("Ingrese un nombre para la plantilla ⚠️");
+      return;
+    }
 
-    editor.resetEditor();
+    if (!formData.area_id) {
+      notifyWarning("Seleccione un área ⚠️");
+      return;
+    }
+
+    if (!editor.contenidoVisual.trim()) {
+      notifyWarning("El contenido de la plantilla está vacío ⚠️");
+      return;
+    }
+
+    try {
+      const result = await guardarPlantilla({
+        userId: usuario.documento,
+        nombre: formData.nombre,
+        descripcion: formData.descripcion,
+        htmlContent: editor.contenidoVisual,
+        variables: formData.variables,
+        area_id: formData.area_id
+      });
+
+      if (result?.success) {
+
+        notifySuccess("Plantilla creada correctamente ✅");
+
+        setFormData({
+          nombre: '',
+          descripcion: '',
+          area_id: '',
+          variables: []
+        });
+
+        editor.resetEditor();
+
+      } else {
+        notifyError(result?.message || "Error al guardar plantilla");
+      }
+
+    } catch (error) {
+      notifyError("Error del servidor al guardar plantilla");
+      console.error(error);
+    }
   };
 
 

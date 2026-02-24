@@ -1,4 +1,5 @@
 import useEnvios from './useEnvios';
+import { toast } from 'react-toastify';
 import './Envios.css';
 
 export default function Envios({ user }) {
@@ -24,6 +25,37 @@ export default function Envios({ user }) {
     handleArchivo,
     enviarCorreos
   } = useEnvios(user);
+
+  const handleSubmit = async () => {
+
+    if (!remitente_id || !plantilla_id || !archivo) {
+      toast.warning("Todos los campos son obligatorios ⚠️");
+      return;
+    }
+
+    if (modoEnvio === "programado" && !fechaProgramada) {
+      toast.warning("Debe seleccionar fecha para envío programado ⏳");
+      return;
+    }
+
+    try {
+      const response = await enviarCorreos({ preview: false });
+
+      if (response?.success) {
+        toast.success(
+          modoEnvio === "programado"
+            ? "Envío programado correctamente 📅"
+            : "Correos enviados correctamente ✅"
+        );
+      } else {
+        toast.error(response?.message || "Error al procesar el envío ❌");
+      }
+
+    } catch (error) {
+      toast.error("Error inesperado del servidor ❌");
+    }
+  };
+
 
   return (
     <div className="envios-container">
@@ -87,12 +119,14 @@ export default function Envios({ user }) {
       )}
 
       <button
-        onClick={() => enviarCorreos({ preview: false })}
+        onClick={handleSubmit}
         disabled={isProcessing}
       >
-        {modoEnvio === 'programado'
-          ? 'Programar envío'
-          : 'Enviar correos'}
+        {isProcessing
+          ? "Procesando..."
+          : modoEnvio === 'programado'
+            ? 'Programar envío'
+            : 'Enviar correos'}
       </button>
     </div>
   );

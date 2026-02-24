@@ -53,11 +53,21 @@ export default function useEnvios(user) {
 
   const enviarCorreos = async ({ preview = false }) => {
 
-    if (!archivo) return alert('Debe cargar un archivo');
-    if (!remitente_id) return alert('Debe seleccionar un remitente');
-    if (!plantilla_id) return alert('Debe seleccionar una plantilla');
-    if (modoEnvio === 'programado' && !fechaProgramada)
-      return alert('Debe seleccionar una fecha');
+    if (!archivo) {
+      return { success: false, message: 'Debe cargar un archivo' };
+    }
+
+    if (!remitente_id) {
+      return { success: false, message: 'Debe seleccionar un remitente' };
+    }
+
+    if (!plantilla_id) {
+      return { success: false, message: 'Debe seleccionar una plantilla' };
+    }
+
+    if (modoEnvio === 'programado' && !fechaProgramada) {
+      return { success: false, message: 'Debe seleccionar una fecha' };
+    }
 
     const formData = new FormData();
     formData.append('archivo', archivo);
@@ -77,11 +87,25 @@ export default function useEnvios(user) {
       });
 
       const data = await res.json();
-      if (!data.ok) alert(data.message || 'Error en el envío');
+
+      if (!data.ok) {
+        return { success: false, message: data.message || 'Error en el envío' };
+      }
+
+      // RESET AUTOMÁTICO DEL FORMULARIO
+      setArchivo(null);
+      setFileName('');
+      setRemitente_id('');
+      setPlantilla_id('');
+      setFechaProgramada('');
+      setModoEnvio('inmediato');
+
+      return { success: true };
 
     } catch (error) {
       console.error(error);
-      alert('Error enviando correos');
+      return { success: false, message: 'Error enviando correos' };
+
     } finally {
       setIsProcessing(false);
     }

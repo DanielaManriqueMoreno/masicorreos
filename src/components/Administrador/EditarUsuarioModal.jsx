@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { obtenerUsuarioAdmin, editarUsuarioAdmin } from "../../api";
+import { notifySuccess, notifyError, notifyWarning } from "../../utils/notificaciones";
 import "./EditarUsuarioModal.css";
 
 // Mapa de áreas
@@ -24,9 +25,8 @@ export default function EditarUsuarioModal({ documento, onClose, onActualizado }
   });
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
 
-  // 🔹 Cargar usuario
+  //  Cargar usuario
   useEffect(() => {
     const cargarUsuario = async () => {
       try {
@@ -63,117 +63,86 @@ export default function EditarUsuarioModal({ documento, onClose, onActualizado }
     }));
   };
 
-  const handleSubmit = async e => {
-    e.preventDefault();
-    setError(null);
+  const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    if (form.password && form.password !== form.confirmPassword) {
-      setError("Las contraseñas no coinciden");
-      return;
+  if (form.password && form.password !== form.confirmPassword) {
+    notifyWarning("Las contraseñas no coinciden ⚠️");
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    const payload = {
+      nombre: form.nombre,
+      correo: form.correo,
+      estado: form.estado,
+      areas: form.areas
+    };
+
+    if (form.password) {
+      payload.password = form.password;
     }
 
-    setLoading(true);
+    const res = await editarUsuarioAdmin(documento, payload);
 
-    try {
-      const payload = {
-        nombre: form.nombre,
-        correo: form.correo,
-        estado: form.estado,
-        areas: form.areas
-      };
+    if (res.success) {
 
-      if (form.password) {
-        payload.password = form.password;
-      }
+      // Actualizar sesión si es el mismo usuario
+      const usuarioSesion = JSON.parse(
+        localStorage.getItem("usuarioLogueado")
+      );
 
-      const res = await editarUsuarioAdmin(documento, payload);
-
-      if (res.success) {
-        // ACTUALIZAR LOCALSTORAGE SI ES EL MISMO USUARIO
-        const usuarioSesion = JSON.parse(
-          localStorage.getItem("usuarioLogueado")
+      if (usuarioSesion?.documento === documento) {
+        localStorage.setItem(
+          "usuarioLogueado",
+          JSON.stringify({
+            ...usuarioSesion,
+            ...payload
+          })
         );
-
-        if (usuarioSesion?.documento === documento) {
-          localStorage.setItem(
-            "usuarioLogueado",
-            JSON.stringify({
-              ...usuarioSesion,
-              ...payload
-            })
-          );
-        }
-
-        onActualizado();
-        onClose();
-      } else {
-        setError(res.message || "Error al editar usuario");
       }
-    } catch (err) {
-      setError("Error del servidor");
-    } finally {
-      setLoading(false);
-    }
-  };
 
+      notifySuccess("Usuario actualizado correctamente ✅");
+
+      onActualizado();
+      onClose();
+
+    } else {
+      notifyError(res.message || "Error al editar usuario");
+    }
+
+  } catch (err) {
+    notifyError("Error del servidor");
+  } finally {
+    setLoading(false);
+  }
+};
   return (
     <div className="modal-overlay">
       <div className="modal">
         <h3>Editar usuario</h3>
 
-        {error && <div className="error">{error}</div>}
-
         <form onSubmit={handleSubmit}>
-          <input
-            name="nombre"
-            value={form.nombre}
-            onChange={handleChange}
-            placeholder="Nombre"
-            required
-          />
-
-          <input
-            name="correo"
-            value={form.correo}
-            onChange={handleChange}
-            placeholder="Correo"
-            required
-          />
+          <input name="nombre" value={form.nombre} onChange={handleChange} placeholder="Nombre" required/>
+          <input name="correo" value={form.correo} onChange={handleChange} placeholder="Correo" required />
 
           <select name="estado" value={form.estado} onChange={handleChange}>
             <option value="ACTIVO">Activo</option>
             <option value="INACTIVO">Inactivo</option>
           </select>
 
-          <input
-            type="password"
-            name="password"
-            placeholder="Nueva contraseña (opcional)"
-            value={form.password}
-            onChange={handleChange}
-          />
-
-          <input
-            type="password"
-            name="confirmPassword"
-            placeholder="Confirmar contraseña"
-            value={form.confirmPassword}
-            onChange={handleChange}
-          />
-
+          <input type="password" name="password" placeholder="Nueva contraseña (opcional)" value={form.password} onChange={handleChange}/>
+          <input type="password" name="confirmPassword" placeholder="Confirmar contraseña" value={form.confirmPassword} onChange={handleChange}/>
             <div className="checkbox-group">
                 {AREAS.map(area => (
                     <label key={area.id}>
                     {area.nombre}
-                    <input
-                        type="checkbox"
-                        checked={form.areas.includes(area.id)}
-                        onChange={() => toggleArea(area.id)}
-                    />
+                    <input type="checkbox" checked={form.areas.includes(area.id)} onChange={() => toggleArea(area.id)} />
                     </label>
                 ))}
             </div>
-
 
           <div className="modal-actions">
             <button type="submit" disabled={loading}>

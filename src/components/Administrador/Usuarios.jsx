@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { obtenerUsuarios } from "../../api";
+import { notifyError } from "../../utils/notificaciones";
 import CrearUsuarioModal from "./CrearUsuarioModal";
 import EditarUsuarioModal from "./EditarUsuarioModal";
 import "./Usuarios.css";
@@ -9,20 +10,21 @@ export default function Usuarios() {
   const [mostrarModal, setMostrarModal] = useState(false);
   const [editarDocumento, setEditarDocumento] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
 
   const cargarUsuarios = async () => {
     try {
       setLoading(true);
       const res = await obtenerUsuarios();
+
       if (res.success) {
         setUsuarios(res.usuarios);
       } else {
-        setError(res.message || "Error al cargar usuarios");
+        notifyError(res.message || "Error al cargar usuarios");
       }
+
     } catch (err) {
-      setError("Error de conexión con el servidor");
+      notifyError("Error de conexión con el servidor");
       console.error(err);
     } finally {
       setLoading(false);
@@ -34,7 +36,6 @@ export default function Usuarios() {
   }, []);
 
   if (loading) return <div>Cargando usuarios...</div>;
-  if (error) return <div className="error">{error}</div>;
 
   return (
     <div className="usuarios-container">

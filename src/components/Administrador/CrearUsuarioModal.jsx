@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { crearUsuarioAdmin } from "../../api";
+import { notifySuccess, notifyError, notifyWarning } from "../../utils/notificaciones";
 import "./CrearUsuarioModal.css";
 
 export default function CrearUsuarioModal({ onClose, onCreado }) {
@@ -35,16 +36,21 @@ export default function CrearUsuarioModal({ onClose, onCreado }) {
   const handleSubmit = async (e) => {
   e.preventDefault();
   setLoading(true);
-  setError(null);
 
   if (form.password !== form.confirmPassword) {
-    setError("Las contraseñas no coinciden");
+    notifyWarning("Las contraseñas no coinciden ⚠️");
     setLoading(false);
     return;
   }
 
-  if (!usuarioActual || !usuarioActual.documento) {
-    setError("No se pudo identificar el usuario creador. Cierra sesión y vuelve a entrar.");
+  if (!usuarioActual?.documento) {
+    notifyError("No se pudo identificar el usuario creador");
+    setLoading(false);
+    return;
+  }
+
+  if (!form.rol || !form.estado) {
+    notifyWarning("Debe seleccionar rol y estado");
     setLoading(false);
     return;
   }
@@ -52,25 +58,36 @@ export default function CrearUsuarioModal({ onClose, onCreado }) {
   try {
     const { confirmPassword, ...data } = form;
 
-    console.log("Datos a enviar:", {
-      ...data,
-      usuarioCreadorId: usuarioActual.documento
-    });
-
     const res = await crearUsuarioAdmin({
       ...data,
       usuarioCreadorDocumento: usuarioActual.documento
     });
 
     if (res.success) {
+
+      notifySuccess("Usuario creado correctamente ✅");
+
+      // Reset del formulario
+      setForm({
+        documento: "",
+        nombre: "",
+        correo: "",
+        password: "",
+        confirmPassword: "",
+        rol: "",
+        estado: "",
+        areas: []
+      });
+
       onCreado();
       onClose();
+
     } else {
-      setError(res.message || "Error al crear usuario");
+      notifyError(res.message || "Error al crear usuario");
     }
+
   } catch (err) {
-    console.log("Error en respuesta:", err);
-    setError("Error de conexión con el servidor");
+    notifyError("Error de conexión con el servidor");
     console.error(err);
   } finally {
     setLoading(false);
@@ -82,8 +99,6 @@ export default function CrearUsuarioModal({ onClose, onCreado }) {
     <div className="modal-overlay">
       <div className="modal">
         <h3>Crear usuario</h3>
-        {error && <div className="error">{error}</div>}
-
         <form onSubmit={handleSubmit}>
           <div className="row">
             <div className="column">

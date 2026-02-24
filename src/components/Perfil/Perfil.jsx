@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { actualizarPerfil } from "../../api";
+import { notifyError, notifyWarning, notifySuccess } from "../../utils/notificaciones";
 import "./Perfil.css";
 
 export default function Perfil({ usuario, onActualizarUsuario }) {
@@ -17,8 +18,6 @@ export default function Perfil({ usuario, onActualizarUsuario }) {
 
   const [mostrarPassword, setMostrarPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [mensaje, setMensaje] = useState(null);
-  const [error, setError] = useState(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -26,71 +25,70 @@ export default function Perfil({ usuario, onActualizarUsuario }) {
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setError(null);
-  setMensaje(null);
+    e.preventDefault();
 
-  if (form.password || form.confirmPassword) {
-    if (form.password !== form.confirmPassword) {
-      setError("Las contraseñas no coinciden");
-      return;
-    }
-  }
-
-  setLoading(true);
-
-  try {
-    const payload = {
-      documento: form.documento,
-      nombre: form.nombre,
-      correo: form.correo
-    };
-
-    if (form.password) {
-      payload.password = form.password;
+    if (form.password || form.confirmPassword) {
+      if (form.password !== form.confirmPassword) {
+        notifyWarning("Las contraseñas no coinciden ⚠️");
+        return;
+      }
     }
 
-    const res = await actualizarPerfil(payload);
+    setLoading(true);
 
-    if (res.success) {
-      setMensaje("Perfil actualizado correctamente");
-
-      // usuario actualizado
-      const usuarioActualizado = {
-        ...usuarioActual,
+    try {
+      const payload = {
+        documento: form.documento,
         nombre: form.nombre,
         correo: form.correo
       };
 
-      // guardar BIEN en localStorage
-      localStorage.setItem(
-        "usuarioLogueado",
-        JSON.stringify(usuarioActualizado)
-      );
+      if (form.password) {
+        payload.password = form.password;
+      }
 
-      setForm(prev => ({
-        ...prev,
-        password: "",
-        confirmPassword: ""
-      }));
-    } else {
-      setError(res.message || "Error al actualizar perfil");
+      const res = await actualizarPerfil(payload);
+
+      if (res.success) {
+
+        notifySuccess("Perfil actualizado correctamente ✅");
+
+        const usuarioActualizado = {
+          ...usuarioActual,
+          nombre: form.nombre,
+          correo: form.correo
+        };
+
+        localStorage.setItem(
+          "usuarioLogueado",
+          JSON.stringify(usuarioActualizado)
+        );
+
+        if (onActualizarUsuario) {
+          onActualizarUsuario(usuarioActualizado);
+        }
+
+        setForm(prev => ({
+          ...prev,
+          password: "",
+          confirmPassword: ""
+        }));
+
+      } else {
+        notifyError(res.message || "Error al actualizar perfil");
+      }
+
+    } catch (err) {
+      notifyError("Error de conexión con el servidor");
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    setError("Error de conexión con el servidor");
-    console.error(err);
-  } finally {
-    setLoading(false);
-  }
-};
-
+  };
 
   return (
     <div className="perfil-card">
       <h2>👤 Mi Perfil</h2>
-
-      {error && <div className="alert error">{error}</div>}
-      {mensaje && <div className="alert success">{mensaje}</div>}
 
       <form onSubmit={handleSubmit}>
         <div className="perfil-grid">
@@ -101,54 +99,28 @@ export default function Perfil({ usuario, onActualizarUsuario }) {
 
           <div>
             <label>Nombre</label>
-            <input name="nombre"
-              value={form.nombre}
-              onChange={handleChange}
-              required
-            />
+            <input name="nombre" value={form.nombre} onChange={handleChange} required />
           </div>
 
           <div>
             <label>Correo</label>
-            <input
-              name="correo"
-              type="email"
-              value={form.correo}
-              onChange={handleChange}
-              required
-            />
+            <input name="correo" type="email" value={form.correo} onChange={handleChange} required/>
           </div>
 
           <div>
             <label>Nueva contraseña</label>
-            <input
-              name="password"
-              type={mostrarPassword ? "text" : "password"}
-              value={form.password}
-              onChange={handleChange}
-              placeholder="Opcional"
-            />
+            <input name="password" type={mostrarPassword ? "text" : "password"} value={form.password} onChange={handleChange} placeholder="Opcional" />
           </div>
 
           <div>
             <label>Confirmar contraseña</label>
-            <input
-              name="confirmPassword"
-              type={mostrarPassword ? "text" : "password"}
-              value={form.confirmPassword}
-              onChange={handleChange}
-              placeholder="Opcional"
-            />
+            <input name="confirmPassword" type={mostrarPassword ? "text" : "password"} value={form.confirmPassword} onChange={handleChange} placeholder="Opcional"/>
           </div>
         </div>
 
         <div className="perfil-opciones">
           <label className="checkbox">
-            <input
-              type="checkbox"
-              checked={mostrarPassword}
-              onChange={() => setMostrarPassword(!mostrarPassword)}
-            />
+            <input type="checkbox" checked={mostrarPassword} onChange={() => setMostrarPassword(!mostrarPassword)}/>
             Mostrar contraseñas
           </label>
         </div>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { notifyWarning } from "../../utils/notificaciones";
 import "./ModalEditarPlantilla.css";
 
 export default function ModalEditarPlantilla({
@@ -15,6 +16,17 @@ export default function ModalEditarPlantilla({
   };
 
   const handleGuardar = () => {
+
+    if (!descripcion.trim()) {
+      notifyWarning("La descripción es obligatoria ⚠️");
+      return;
+    }
+
+    if (!contenido.trim()) {
+      notifyWarning("El contenido de la plantilla no puede estar vacío ⚠️");
+      return;
+    }
+
     onSave({
       ...plantilla,
       descripcion,
