@@ -56,19 +56,16 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, '.env') });
 
-const logActivity = async (userId, action, description, req = null) => {
-    try {
-      const ip = req?.ip || null;
-
-      await pool.execute(
-        `INSERT INTO activity_logs (user_id, username, action, description, ip_address)
-        VALUES (?, ?, ?, ?, ?)`,
-        [userId, req?.user?.nombre || 'Desconocido', action, description, ip]
-      );
-
-    } catch (error) {
-      console.error("Error registrando actividad:", error);
+const logActivity = async (userId, action, description, module = null) => {
+  try {
+    if (!userId || !action) {
+      console.warn("logActivity: faltan datos obligatorios");
+      return;
     }
+    await pool.execute(`INSERT INTO activity_logs (user_id, action, description, module) VALUES (?, ?, ?, ?)`,[userId, action, description || '', module]);
+  } catch (error) {
+    console.error("Error registrando actividad:", error);
+  }
 };
 
 const app = express();
@@ -232,12 +229,14 @@ app.post('/api/admin/crear-usuario', async (req, res) => {
       }
     }
 
-    await logActivity(
-      usuarioCreadorDocumento,
-      'Administrador',
-      'CREAR_USUARIO',
-      `Usuario creado: ${nombre} (${documento})`
-    );
+    if (usuarioCreadorDocumento) {
+      await logActivity(
+        usuarioCreadorDocumento,
+        'CREAR_USUARIO',
+        `Usuario creado: ${nombre} (${documento})`,
+        'USUARIOS'
+      );
+    }
 
     res.json({
       success: true,
@@ -318,6 +317,14 @@ app.put("/api/perfil", async (req, res) => {
       message: 'Perfil actualizado correctamente',
       user: usuarioActualizado[0]
     });
+    if (documento) {
+      await logActivity(
+        documento,
+        'ACTUALIZAR_PERFIL',
+        `Perfil actualizado`,
+        'USUARIOS'
+      );
+    }
 
   } catch (error) {
     console.error('ERROR ACTUALIZAR PERFIL:', error);
@@ -331,6 +338,7 @@ app.put("/api/perfil", async (req, res) => {
 //editar usuarios desde ADMIN
 app.put('/api/admin/usuarios/:documento', async (req, res) => {
   const conn = await pool.getConnection();
+  const documentoAdmin = req.body.documentoAdmin;
 
   try {
     const { documento } = req.params;
@@ -345,10 +353,7 @@ app.put('/api/admin/usuarios/:documento', async (req, res) => {
 
     await conn.beginTransaction();
 
-    let query = `
-      UPDATE usuarios
-      SET nombre = ?, correo = ?, estado = ?
-    `;
+    let query = `UPDATE usuarios SET nombre = ?, correo = ?, estado = ? `;
     const params = [nombre, correo, estado];
 
     if (password) {
@@ -384,6 +389,14 @@ app.put('/api/admin/usuarios/:documento', async (req, res) => {
       success: true,
       message: 'Usuario actualizado correctamente'
     });
+    if (documentoAdmin) {
+      await logActivity(
+        documentoAdmin,
+        'ACTUALIZAR_USUARIO',
+        `Usuario actualizado: ${documento}`,
+        'USUARIOS'
+      );
+    }
 
   } catch (error) {
     await conn.rollback();
@@ -508,7 +521,7 @@ app.get('/api/admin/areas', async (req, res) => {
 app.post('/api/admin/areas', async (req, res) => {
   try {
     const { nombre } = req.body;
-
+    const documento = req.body.documento;
     if (!nombre) {
       return res.status(400).json({
         success: false,
@@ -522,12 +535,14 @@ app.post('/api/admin/areas', async (req, res) => {
     );
 
     res.json({ success: true, message: "Área creada correctamente" });
-    await logActivity(
-      1, // o el admin real si lo tienes en sesión
-      'Administrador',
-      'CREAR_AREA',
-      `Área creada: ${nombre}`
-    );
+    if (documento) {
+      await logActivity(
+        documento,
+        'CREAR_AREA',
+        `Área creada: ${nombre}`,
+        'AREAS'
+      );
+    }
 
   } catch (error) {
     console.error("Error creando área:", error);
@@ -540,6 +555,7 @@ app.put('/api/admin/areas/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { nombre, estado } = req.body;
+    const documento = req.body.documento;
 
     if (!nombre || !estado) {
       return res.status(400).json({
@@ -554,12 +570,14 @@ app.put('/api/admin/areas/:id', async (req, res) => {
     );
 
     res.json({ success: true, message: "Área actualizada correctamente" });
-    await logActivity(
-      1,
-      'Administrador',
-      'ACTUALIZAR_AREA',
-      `Área actualizada: ${nombre}`
-    );
+    if (documento) {
+      await logActivity(
+        documento,
+        'ACTUALIZAR_AREA',
+        `Área actualizada: ${nombre}`,
+        'AREAS'
+      );
+    }
 
   } catch (error) {
     console.error("Error actualizando área:", error);
@@ -569,6 +587,7 @@ app.put('/api/admin/areas/:id', async (req, res) => {
 
 //Eliminar Area
 app.delete('/api/admin/areas/:id', async (req, res) => {
+  const documento = req.body.documento;
   try {
     const { id } = req.params;
 
@@ -578,12 +597,14 @@ app.delete('/api/admin/areas/:id', async (req, res) => {
     );
 
     res.json({ success: true });
+    if (documento) {
     await logActivity(
-      1,
-      'Administrador',
+      documento,
       'ELIMINAR_AREA',
-      `Área eliminada ID: ${id}`
+      `Área eliminada ID: ${id}`,
+      'AREAS'
     );
+  }
 
   } catch (error) {
     console.error("Error eliminando área:", error);
@@ -934,9 +955,9 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
     await logActivity(
       usuarioId,
       'ENVIO_CORREOS',
-      `Envío ID ${envioId} - Total: ${rows.length}, Enviados: ${enviados}, Fallidos: ${fallidos}`
+      `Envío ID ${envioId} - Total: ${rows.length}, Enviados: ${enviados}, Fallidos: ${fallidos}`,
+      'ENVIOS'
     );
-
     res.json({
       ok: true,
       results: {
@@ -955,6 +976,12 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
       ok: false,
       message: 'Error procesando envío'
     });
+    await logActivity(
+      usuarioId,
+      'ENVIO_CORREOS',
+      `Envío ID ${envioId} - Total: ${rows.length}, Enviados: ${enviados}, Fallidos: ${fallidos}`,
+      'ENVIOS'
+    );
   } finally {
     conn.release();
   }
@@ -964,36 +991,19 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
 const processScheduledEmails = async () => {
   try {
     const [envios] = await pool.execute(
-      `SELECT * FROM envios
-       WHERE tipo = 'PROGRAMADO'
-       AND estado = 'pendiente'
-       AND fecha_programada <= NOW()`
-    );
-
+      `SELECT * FROM envios WHERE tipo = 'PROGRAMADO' AND estado = 'pendiente' AND fecha_programada <= NOW()` );
     for (const envio of envios) {
 
       const [destinatarios] = await pool.execute(
-        `SELECT * FROM destinatarios_envio
-         WHERE envio_id = ? AND estado = 'pendiente'`,
-        [envio.id]
-      );
-
+        `SELECT * FROM destinatarios_envio WHERE envio_id = ? AND estado = 'pendiente'`, [envio.id] );
       for (const dest of destinatarios) {
         try {
           await pool.execute(
-            `UPDATE destinatarios_envio 
-             SET estado = 'enviado' 
-             WHERE id = ?`,
-            [dest.id]
-          );
+            `UPDATE destinatarios_envio SET estado = 'enviado' WHERE id = ?`, [dest.id] );
 
         } catch (err) {
           await pool.execute(
-            `UPDATE destinatarios_envio 
-             SET estado = 'fallido', error_mensaje = ?
-             WHERE id = ?`,
-            [err.message, dest.id]
-          );
+            `UPDATE destinatarios_envio SET estado = 'fallido', error_mensaje = ? WHERE id = ?`,[err.message, dest.id]);
         }
       }
 
@@ -1080,13 +1090,15 @@ app.post('/api/templates', async (req, res) => {
     const variablesJson = variables ? JSON.stringify(variables) : '';
 
     const [result] = await pool.execute(
-      `INSERT INTO plantillas 
-       (user_id, nom_plantilla, descripcion, html_content, variables, area_id, estado) 
-       VALUES (?, ?, ?, ?, ?, ?, 'ACTIVO')`,
-      [userId, nombre, descripcion || '', htmlContent, variablesJson, area_id]
-    );
-
-    await logActivity(parseInt(userId), 'Usuario', 'CREAR_PLANTILLA', `Plantilla creada: ${nombre}`);
+      `INSERT INTO plantillas (user_id, nom_plantilla, descripcion, html_content, variables, area_id, estado)  VALUES (?, ?, ?, ?, ?, ?, 'ACTIVO')`, [userId, nombre, descripcion || '', htmlContent, variablesJson, area_id]);
+    if (userId) {
+      await logActivity(
+        parseInt(userId),
+        'CREAR_PLANTILLA',
+        `Plantilla creada: ${nombre}`,
+        'PLANTILLAS'
+      );
+    }
 
     res.status(201).json({
       success: true,
@@ -1146,18 +1158,15 @@ app.put('/api/templates/:id', async (req, res) => {
     updateValues.push(id, userId);
 
     await pool.execute(
-      `UPDATE plantillas 
-       SET ${updateFields.join(', ')} 
-       WHERE id = ? AND user_id = ?`,
-      updateValues
-    );
-
-    await logActivity(
-      parseInt(userId),
-      'Usuario',
-      'ACTUALIZAR_PLANTILLA',
-      `Plantilla actualizada: ${id}`
-    );
+      `UPDATE plantillas SET ${updateFields.join(', ')}  WHERE id = ? AND user_id = ?`, updateValues );
+   if (userId) {
+      await logActivity(
+            parseInt(userId),
+            'ACTUALIZAR_PLANTILLA',
+            `Plantilla actualizada: ${id}`,
+            'PLANTILLAS'
+          );
+    }
 
     res.json({
       success: true,
@@ -1199,7 +1208,12 @@ app.delete('/api/templates/:id', async (req, res) => {
     );
 
     if (userId) {
-      await logActivity(parseInt(userId), 'Usuario', 'ELIMINAR_PLANTILLA', `Plantilla eliminada: ${existing[0].nombre}`);
+      await logActivity(
+        parseInt(userId),
+        'ELIMINAR_PLANTILLA',
+        `Plantilla eliminada: ${existing[0].nombre}`,
+        'PLANTILLAS'
+      );
     }
 
     res.json({ success: true, message: 'Plantilla eliminada exitosamente' });
@@ -1345,9 +1359,7 @@ app.get('/api/registros/actividad', async (req, res) => {
     const pageSize = parseInt(limit);
     const offset = (pageNumber - 1) * pageSize;
 
-    let where = `
-      WHERE al.action NOT IN ('SOLICITAR_RECUPERACION_PASSWORD', 'RESET_PASSWORD')
-    `;
+    let where = `WHERE al.action NOT IN ('SOLICITAR_RECUPERACION_PASSWORD', 'RESET_PASSWORD')`;
 
     const params = [];
 
@@ -1371,27 +1383,16 @@ app.get('/api/registros/actividad', async (req, res) => {
       params.push(fechaFin);
     }
 
-    // 🔢 Total de registros
+    // Total de registros
     const [totalRows] = await pool.execute(
-      `SELECT COUNT(*) as total
-       FROM activity_logs al
-       ${where}`,
-      params
+      `SELECT COUNT(*) as total FROM activity_logs al ${where}`,params
     );
 
     const total = totalRows[0].total;
 
     // 📋 Datos paginados
     const [registros] = await pool.execute(
-      `SELECT al.*, u.nombre as user_nombre
-       FROM activity_logs al
-       JOIN usuarios u ON al.user_id = u.documento
-       ${where}
-       ORDER BY al.timestamp DESC
-       LIMIT ? OFFSET ?`,
-      [...params, pageSize, offset]
-    );
-
+      `SELECT al.*, u.nombre as user_nombre FROM activity_logs al JOIN usuarios u ON al.user_id = u.documento ${where} ORDER BY al.timestamp DESC LIMIT ? OFFSET ?`, [...params, pageSize, offset] );
     res.json({
       success: true,
       registros,

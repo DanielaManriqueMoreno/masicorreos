@@ -97,6 +97,9 @@ export default function RegistrosActividad() {
           <option value="ACTUALIZAR_USUARIO">Actualizar Usuario</option>
           <option value="CREAR_AREA">Crear Área</option>
           <option value="ACTUALIZAR_AREA">Actualizar Área</option>
+          <option value="CREAR_ENVIO">Crear Envío</option>
+          <option value="ACTUALIZAR_ENVIO">Actualizar Envío</option>
+          <option value="ENVIAR_CORREO">Enviar Correo</option>
         </select>
 
         <input type="date" name="fechaInicio" value={filtros.fechaInicio} onChange={handleChange}/>
