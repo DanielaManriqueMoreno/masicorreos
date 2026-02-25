@@ -65,17 +65,40 @@ export default function Envios({ user }) {
     p => p.id == plantilla_id
   );
 
-  let contenidoPreview = plantillaSeleccionada?.contenido || "";
+  let contenidoPreview = plantillaSeleccionada?.html_content || "";
+
+  const convertirFechaExcel = (serial) => {
+    const fecha = new Date((serial - 25569) * 86400 * 1000);
+    return fecha.toLocaleDateString();
+  };
+
+  const convertirHoraExcel = (serial) => {
+    const totalSegundos = Math.floor(serial * 24 * 60 * 60);
+    const horas = Math.floor(totalSegundos / 3600);
+    const minutos = Math.floor((totalSegundos % 3600) / 60);
+
+    return `${String(horas).padStart(2, "0")}:${String(minutos).padStart(2, "0")}`;
+  };
 
   if (contenidoPreview && previewData) {
     Object.keys(previewData).forEach(key => {
-      const regex = new RegExp(`{{${key}}}`, "g");
-      contenidoPreview = contenidoPreview.replace(
-        regex,
-        previewData[key]
-      );
+      let valor = previewData[key];
+
+      // Convertir fecha Excel
+      if (key.toLowerCase() === "fecha" && typeof valor === "number") {
+        valor = convertirFechaExcel(valor);
+      }
+
+      // Convertir hora Excel
+      if (key.toLowerCase() === "hora" && typeof valor === "number") {
+        valor = convertirHoraExcel(valor);
+      }
+
+      const regex = new RegExp(`{{\\s*${key}\\s*}}`, "g");
+      contenidoPreview = contenidoPreview.replace(regex, valor);
     });
   }
+  console.log("Plantillas:", plantillas);
   return (
     <div className="envios-container">
       <h2>Envío de Correos</h2>

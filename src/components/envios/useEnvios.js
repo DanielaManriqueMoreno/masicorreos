@@ -68,7 +68,14 @@ export default function useEnvios(user) {
       console.log("Datos del Excel para preview:", jsonData);
 
       if (jsonData.length > 0) {
-        setPreviewData(jsonData[0]); 
+        const fila = jsonData[0];
+
+        const filaNormalizada = {};
+        Object.keys(fila).forEach(key => {
+          filaNormalizada[key.toLowerCase()] = fila[key];
+        });
+
+        setPreviewData(filaNormalizada);
       }
     };
 

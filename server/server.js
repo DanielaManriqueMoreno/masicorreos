@@ -890,7 +890,7 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
   const correo = row.Correo || row.correo;
   if (!correo) continue;
 
-  // 🔥 Transformar fechas y horas Excel
+  //  Transformar fechas y horas Excel
   for (const key in row) {
     const value = row[key];
 
@@ -1292,7 +1292,6 @@ app.get('/api/plantillas-disponibles', async (req, res) => {
       });
     }
 
-    // 🔹 Primero obtener rol del usuario
     const [usuarios] = await pool.execute(
       'SELECT rol FROM usuarios WHERE documento = ?',
       [documento]
@@ -1310,28 +1309,13 @@ app.get('/api/plantillas-disponibles', async (req, res) => {
     let query;
     let params = [];
 
-    //  SI ES ADMINISTRADOR → ve todas las plantillas activas
     if (rol === 'ADMINISTRADOR') {
 
       query = `
-        SELECT id, nom_plantilla
-        FROM plantillas
-        WHERE estado = 'ACTIVO'
-        ORDER BY nom_plantilla
-      `;
-
+        SELECT id, nom_plantilla, html_content FROM plantillas WHERE estado = 'ACTIVO' ORDER BY nom_plantilla `;
     } else {
 
-      //  SI ES USUARIO NORMAL → solo las de sus áreas
-      query = `
-        SELECT p.id, p.nom_plantilla
-        FROM plantillas p
-        INNER JOIN area_usuario au ON au.id_area = p.area_id
-        WHERE au.id_usuario = ?
-        AND p.estado = 'ACTIVO'
-        ORDER BY p.nom_plantilla
-      `;
-
+      query = `SELECT p.id, p.nom_plantilla, p.html_content FROM plantillas p INNER JOIN area_usuario au ON au.id_area = p.area_id WHERE au.id_usuario = ? AND p.estado = 'ACTIVO' ORDER BY p.nom_plantilla `;
       params = [documento];
     }
 
