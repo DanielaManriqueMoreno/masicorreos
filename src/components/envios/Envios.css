@@ -72,3 +72,22 @@
   background-color: #a0c4f2;
   cursor: not-allowed;
 }
+.preview-container {
+  margin-top: 30px;
+}
+
+.email-preview {
+  background: #ffffff;
+  border: 1px solid #ddd;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+.preview-body {
+  margin-top: 15px;
+}
+
+.email-preview hr {
+  margin: 15px 0;
+}

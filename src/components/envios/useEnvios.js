@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import * as XLSX from "xlsx";
 
 export default function useEnvios(user) {
 
@@ -15,6 +16,7 @@ export default function useEnvios(user) {
   const [plantilla_id, setPlantilla_id] = useState('');
 
   const [isProcessing, setIsProcessing] = useState(false);
+  const [previewData, setPreviewData] = useState(null);
 
   useEffect(() => {
     if (!user?.documento) return;
@@ -43,12 +45,34 @@ export default function useEnvios(user) {
   const handleArchivo = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
     if (!file.name.endsWith('.xlsx')) {
       alert('Solo se permiten archivos Excel (.xlsx)');
       return;
     }
+
     setArchivo(file);
     setFileName(file.name);
+
+    // Leer primera fila para preview
+    const reader = new FileReader();
+
+    reader.onload = (evt) => {
+      const data = new Uint8Array(evt.target.result);
+      const workbook = XLSX.read(data, { type: "array" });
+
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+
+      const jsonData = XLSX.utils.sheet_to_json(worksheet);
+      console.log("Datos del Excel para preview:", jsonData);
+
+      if (jsonData.length > 0) {
+        setPreviewData(jsonData[0]); 
+      }
+    };
+
+    reader.readAsArrayBuffer(file);
   };
 
   const enviarCorreos = async ({ preview = false }) => {
@@ -121,6 +145,7 @@ export default function useEnvios(user) {
     plantillas,
     plantilla_id,
     isProcessing,
+    previewData,
     setModoEnvio,
     setFechaProgramada,
     setRemitente_id,

@@ -24,7 +24,8 @@ export default function Envios({ user }) {
     setPlantilla_id,
 
     handleArchivo,
-    enviarCorreos
+    enviarCorreos,
+    previewData
   } = useEnvios(user);
   const fileInputRef = useRef(null);
   const handleSubmit = async () => {
@@ -60,7 +61,21 @@ export default function Envios({ user }) {
     }
   };
 
+  const plantillaSeleccionada = plantillas.find(
+    p => p.id == plantilla_id
+  );
 
+  let contenidoPreview = plantillaSeleccionada?.contenido || "";
+
+  if (contenidoPreview && previewData) {
+    Object.keys(previewData).forEach(key => {
+      const regex = new RegExp(`{{${key}}}`, "g");
+      contenidoPreview = contenidoPreview.replace(
+        regex,
+        previewData[key]
+      );
+    });
+  }
   return (
     <div className="envios-container">
       <h2>Envío de Correos</h2>
@@ -72,10 +87,7 @@ export default function Envios({ user }) {
       </select>
 
       <label>Remitente</label>
-      <select
-        value={remitente_id}
-        onChange={(e) => setRemitente_id(e.target.value)}
-      >
+      <select value={remitente_id} onChange={(e) => setRemitente_id(e.target.value)} >
         <option value="">Seleccione remitente</option>
         {remitentes.map(rem => (
           <option key={rem.id} value={rem.id}>
@@ -87,19 +99,12 @@ export default function Envios({ user }) {
       {modoEnvio === 'programado' && (
         <>
           <label>Fecha y hora</label>
-          <input
-            type="datetime-local"
-            value={fechaProgramada}
-            onChange={(e) => setFechaProgramada(e.target.value)}
-          />
+          <input type="datetime-local" value={fechaProgramada} onChange={(e) => setFechaProgramada(e.target.value)} />
         </>
       )}
 
       <label>Plantilla</label>
-      <select
-        value={plantilla_id}
-        onChange={(e) => setPlantilla_id(e.target.value)}
-      >
+      <select value={plantilla_id} onChange={(e) => setPlantilla_id(e.target.value)} >
         <option value="">Seleccione una plantilla</option>
         {plantillas.map(p => (
           <option key={p.id} value={p.id}>
@@ -109,27 +114,35 @@ export default function Envios({ user }) {
       </select>
 
       <label>Archivo Excel</label>
-      <input
-        type="file"
-        accept=".xlsx"
-        ref={fileInputRef}
-        onChange={handleArchivo}
-      />
+      <input type="file" accept=".xlsx" ref={fileInputRef} onChange={handleArchivo} />
 
       {archivo && (
         <p className="file-name">📄 {fileName}</p>
       )}
 
-      <button
-        onClick={handleSubmit}
-        disabled={isProcessing}
-      >
+      <button onClick={handleSubmit} disabled={isProcessing} >
         {isProcessing
           ? "Procesando..."
           : modoEnvio === 'programado'
             ? 'Programar envío'
             : 'Enviar correos'}
       </button>
+      {/* PREVIEW */}
+      <div className="preview-container">
+        <h4>📩 Vista previa del mensaje</h4>
+        <div className="email-preview">
+          <p>
+            <strong>De:</strong>{" "}
+            {remitentes.find(r => r.id == remitente_id)?.correo || "no-reply@masicorreos.com"}
+          </p>
+          <p>
+            <strong>Plantilla:</strong>{" "}
+            {plantillas.find(p => p.id == plantilla_id)?.nom_plantilla || "Sin seleccionar"}
+          </p>
+          <hr />
+          <div className="preview-body" dangerouslySetInnerHTML={{__html: contenidoPreview || "<p>Aquí se verá el contenido del mensaje...</p>"}}/>       
+          </div>
+      </div>
     </div>
   );
 }
