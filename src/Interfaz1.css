@@ -6,9 +6,10 @@ html, body{
 
 .interfaz-container {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   width: 100%;
-  background: #ecf0f1;
+  background: #f4f6f9;
   align-items: stretch;
 }
 
@@ -34,6 +35,8 @@ html, body{
 
 .main-content {
   flex: 1;
+  overflow: auto;
+  padding: 20px;
   display: flex;
   flex-direction: column;
   min-width: 0;
