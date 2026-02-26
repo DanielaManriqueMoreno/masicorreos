@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 23-02-2026 a las 20:51:13
+-- Tiempo de generación: 27-02-2026 a las 00:15:07
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -44,10 +44,9 @@ CREATE TABLE `acciones_usuario_envio` (
 CREATE TABLE `activity_logs` (
   `id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
-  `username` varchar(255) NOT NULL,
   `action` varchar(255) NOT NULL,
   `description` text DEFAULT NULL,
-  `ip_address` varchar(45) DEFAULT NULL,
+  `module` varchar(45) DEFAULT NULL,
   `timestamp` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -55,8 +54,21 @@ CREATE TABLE `activity_logs` (
 -- Volcado de datos para la tabla `activity_logs`
 --
 
-INSERT INTO `activity_logs` (`id`, `user_id`, `username`, `action`, `description`, `ip_address`, `timestamp`) VALUES
-(1, 6, 'Desconocido', 'ENVIO_CORREOS', 'Envío ID 36 - Total: 3, Enviados: 0, Fallidos: 0', NULL, '2026-02-23 19:38:23');
+INSERT INTO `activity_logs` (`id`, `user_id`, `action`, `description`, `module`, `timestamp`) VALUES
+(1, 6, 'ENVIO_CORREOS', 'Envío ID 36 - Total: 3, Enviados: 0, Fallidos: 0', NULL, '2026-02-23 19:38:23'),
+(2, 6, 'Usuario', 'CREAR_PLANTILLA', NULL, '2026-02-25 14:38:58'),
+(3, 6, 'ENVIO_CORREOS', 'Envío ID 37 - Total: 1, Enviados: 0, Fallidos: 0', NULL, '2026-02-25 15:22:28'),
+(4, 1, 'Administrador', 'CREAR_AREA', NULL, '2026-02-25 16:18:03'),
+(5, 1, 'Administrador', 'CREAR_AREA', NULL, '2026-02-25 16:18:11'),
+(6, 1, 'Administrador', 'CREAR_AREA', NULL, '2026-02-25 16:18:15'),
+(7, 1, 'Administrador', 'ELIMINAR_AREA', NULL, '2026-02-25 16:18:28'),
+(8, 1, 'Administrador', 'ELIMINAR_AREA', NULL, '2026-02-25 16:18:30'),
+(9, 1, 'Administrador', 'ELIMINAR_AREA', NULL, '2026-02-25 16:18:32'),
+(10, 6, 'ACTUALIZAR_PLANTILLA', 'Plantilla actualizada: 4', 'PLANTILLAS', '2026-02-26 20:07:59'),
+(11, 6, 'ENVIO_CORREOS', 'Envío ID 38 - Total: 1', 'ENVIOS', '2026-02-26 20:09:27'),
+(12, 6, 'ACTUALIZAR_PERFIL', 'Perfil actualizado', 'USUARIOS', '2026-02-26 20:09:40'),
+(13, 6, 'ACTUALIZAR_PLANTILLA', 'Plantilla actualizada: 7', 'PLANTILLAS', '2026-02-26 20:17:25'),
+(14, 6, 'ENVIO_CORREOS', 'Envío ID 39 - Total: 1', 'ENVIOS', '2026-02-26 20:17:39');
 
 -- --------------------------------------------------------
 
@@ -80,7 +92,8 @@ INSERT INTO `areas` (`id`, `nombre`, `estado`) VALUES
 (7, 'Talento Humano', 'ACTIVO'),
 (8, 'Contabilidad', 'ACTIVO'),
 (9, 'Radicacion', 'ACTIVO'),
-(10, 'Sistemas', 'ACTIVO');
+(10, 'Sistemas', 'ACTIVO'),
+(19, 'Area3', 'INACTIVO');
 
 -- --------------------------------------------------------
 
@@ -103,9 +116,9 @@ INSERT INTO `area_usuario` (`id`, `id_usuario`, `id_area`) VALUES
 (59, 11111111, 7),
 (60, 11111111, 9),
 (61, 11111111, 10),
-(62, 33333333, 5),
-(63, 33333333, 10),
-(64, 33333333, 6);
+(65, 33333333, 5),
+(66, 33333333, 10),
+(67, 33333333, 6);
 
 -- --------------------------------------------------------
 
@@ -130,14 +143,10 @@ CREATE TABLE `destinatarios_envio` (
 --
 
 INSERT INTO `destinatarios_envio` (`id`, `envio_id`, `correo`, `estado`, `datos_json`, `intentos`, `mensaje_error`, `fecha_envio`, `fecha_apertura`) VALUES
-(32, 33, 'danielamanrique.mo@gmail.com', 'enviado', '', 0, NULL, '2026-02-20 08:51:24', NULL),
-(33, 33, 'danielamanrique.mo@gmail.com', 'enviado', '', 0, NULL, '2026-02-20 08:51:25', NULL),
-(34, 33, 'danielamanrique.mo@gmail.com', 'enviado', '', 0, NULL, '2026-02-20 08:51:27', NULL),
-(35, 33, 'danielamanrique.mo@gmail.com', 'enviado', '', 0, NULL, '2026-02-20 08:51:28', NULL),
-(36, 33, 'danielamanrique.mo@gmail.com', 'enviado', '', 0, NULL, '2026-02-20 08:51:30', NULL),
 (37, 36, 'danielamanrique.mo@gmail.com', 'enviado', '{\"Correo\":\"danielamanrique.mo@gmail.com\",\"fecha\":\"19/2/2026\",\"hora\":\"8:13\",\"nombre\":\"daniela\",\"direccion\":\"umit\",\"Asunto\":\"prueba envios\"}', 0, NULL, '2026-02-23 14:38:32', NULL),
 (38, 36, 'danielamanrique.mo@gmail.com', 'enviado', '{\"Correo\":\"danielamanrique.mo@gmail.com\",\"fecha\":\"20/2/2026\",\"hora\":\"9:13\",\"nombre\":\"daniela\",\"direccion\":\"umit\",\"Asunto\":\"prueba envios\"}', 0, NULL, '2026-02-23 14:38:34', NULL),
-(39, 36, 'danielamanrique.mo@gmail.com', 'enviado', '{\"Correo\":\"danielamanrique.mo@gmail.com\",\"fecha\":\"21/2/2026\",\"hora\":\"10:13\",\"nombre\":\"daniela\",\"direccion\":\"umit\",\"Asunto\":\"prueba envios\"}', 0, NULL, '2026-02-23 14:38:35', NULL);
+(39, 36, 'danielamanrique.mo@gmail.com', 'enviado', '{\"Correo\":\"danielamanrique.mo@gmail.com\",\"fecha\":\"21/2/2026\",\"hora\":\"10:13\",\"nombre\":\"daniela\",\"direccion\":\"umit\",\"Asunto\":\"prueba envios\"}', 0, NULL, '2026-02-23 14:38:35', NULL),
+(40, 37, 'daniela.manrique.mo@gmail.com', 'enviado', '{\"Correo\":\"daniela.manrique.mo@gmail.com\",\"fecha\":\"24/2/2026\",\"hora\":\"9:40\",\"nombre\":\"daniela\",\"direccion\":\"umit\",\"Asunto\":\"prueba preview\"}', 0, NULL, '2026-02-25 10:22:34', NULL);
 
 -- --------------------------------------------------------
 
@@ -226,7 +235,10 @@ INSERT INTO `envios` (`id`, `tipo`, `remitente_id`, `plantilla_id`, `asunto`, `m
 (31, 'INMEDIATO', 1, 7, NULL, NULL, NULL, 0, 'fallido', 9, 0, 9, '2026-02-20 08:13:28', NULL, '2026-02-20 08:13:38', '2026-02-20 08:13:43', '2026-02-20 08:13:28'),
 (32, 'INMEDIATO', 1, 7, NULL, NULL, NULL, 0, 'completado', 9, 9, 0, '2026-02-20 08:51:02', NULL, '2026-02-20 08:51:06', '2026-02-20 08:51:18', '2026-02-20 08:51:02'),
 (33, 'INMEDIATO', 1, 7, NULL, NULL, NULL, 0, 'completado', 9, 8, 0, '2026-02-20 08:51:03', NULL, '2026-02-20 08:51:19', '2026-02-20 08:51:30', '2026-02-20 08:51:03'),
-(36, 'PROGRAMADO', 1, 7, 'calidad 1', 'Hola este es un correo de prueba enviado el dia {{ fecha }} a las {{ hora }}, enviado a {{ nombre }} que vive en {{ direccion }}', NULL, 0, 'completado', 0, 3, 0, '2026-02-23 14:38:23', '2026-02-23 14:39:00', '2026-02-23 14:38:30', '2026-02-23 14:38:35', NULL);
+(36, 'PROGRAMADO', 1, 7, 'calidad 1', 'Hola este es un correo de prueba enviado el dia {{ fecha }} a las {{ hora }}, enviado a {{ nombre }} que vive en {{ direccion }}', NULL, 0, 'completado', 0, 3, 0, '2026-02-23 14:38:23', '2026-02-23 14:39:00', '2026-02-23 14:38:30', '2026-02-23 14:38:35', NULL),
+(37, 'INMEDIATO', 1, 7, 'calidad 1', 'Hola este es un correo de prueba enviado el dia {{ fecha }} a las {{ hora }}, enviado a {{ nombre }} que vive en {{ direccion }}', NULL, 0, 'completado', 0, 1, 0, '2026-02-25 10:22:28', NULL, '2026-02-25 10:22:32', '2026-02-25 10:22:34', '2026-02-25 10:22:28'),
+(38, 'INMEDIATO', 1, 7, 'calidad 1', 'Hola este es un correo de prueba enviado el dia {{ fecha }} a las {{ hora }}, enviado a {{ nombre }} que vive en {{ direccion }}', NULL, 0, 'fallido', 0, 0, 0, '2026-02-26 15:09:27', NULL, '2026-02-26 15:09:28', '2026-02-26 15:09:28', '2026-02-26 15:09:27'),
+(39, 'INMEDIATO', 1, 7, 'calidad 1', 'Hola este es un correo de prueba enviado el dia {{ fecha }} a las {{ hora }}, enviado a {{ nombre }} que vive en {{ direccion }}', NULL, 0, 'fallido', 0, 0, 0, '2026-02-26 15:17:39', NULL, '2026-02-26 15:17:48', '2026-02-26 15:17:48', '2026-02-26 15:17:39');
 
 -- --------------------------------------------------------
 
@@ -269,11 +281,13 @@ INSERT INTO `plantillas` (`id`, `user_id`, `nom_plantilla`, `descripcion`, `html
 (1, 6, 'prueba1', 'prueba1', '{{ Nombre }}', '[\" Nombre \"]', 5, 'ACTIVO', '2026-01-30 01:54:12', '2026-01-30 01:54:12'),
 (2, 6, 'prueba2', 'asd', 'hola {{ nombre }} este es un mensaje de prueba enviado el {{ fecha }}', '[\" nombre \",\" fecha \"]', 10, 'ACTIVO', '2026-01-30 02:51:20', '2026-01-30 02:51:20'),
 (3, 6, 'prueba1', 'prueba1\n', 'Hola {{nombre}} {{ mensaje }}', '[\" mensaje \"]', 6, 'ACTIVO', '2026-01-30 16:47:12', '2026-01-30 16:47:12'),
-(4, 6, 'prueba2', '´poiuy', 'les informo que {{ mensaje }}', '[\" mensaje \"]', 6, 'ACTIVO', '2026-01-30 16:52:32', '2026-01-30 16:52:32'),
+(4, 6, 'prueba2', 'descripcion', 'les informo que {{ mensaje }}', '[\" mensaje \"]', 6, 'ACTIVO', '2026-01-30 16:52:32', '2026-01-30 16:52:32'),
 (5, 6, 'plantilla 1', 'Descripcion', 'Hola {{ nombre }} este es un mensaje de prueba hecho el {{ fecha }}', '[\" nombre \",\" fecha \"]', 5, 'ACTIVO', '2026-02-02 21:08:01', '2026-02-02 21:08:01'),
 (6, 6, 'prueba1', 'prueba', 'hola {{ nombre }} este es un mensaje de prueba hecho el {{ fecha}}', '[\" nombre \",\" fecha\"]', 6, 'ACTIVO', '2026-02-02 22:32:38', '2026-02-02 22:32:38'),
 (7, 6, 'calidad 1', 'ninguna', 'Hola este es un correo de prueba enviado el dia {{ fecha }} a las {{ hora }}, enviado a {{ nombre }} que vive en {{ direccion }}', '[\" fecha \",\" hora \",\" nombre \",\" direccion \"]', 6, 'ACTIVO', '2026-02-18 20:31:25', '2026-02-18 20:31:25'),
-(8, 6, 'plantilla contabilidad', 'no aplica', 'Este es un mensaje de prueba del area {{ contabilidad }}', '[\" contabilidad \"]', 8, 'ACTIVO', '2026-02-19 20:36:08', '2026-02-19 20:36:08');
+(8, 6, 'plantilla contabilidad', 'no aplica', 'Este es un mensaje de prueba del area {{ contabilidad }}', '[\" contabilidad \"]', 8, 'ACTIVO', '2026-02-19 20:36:08', '2026-02-19 20:36:08'),
+(9, 6, 'radicacion 1', 'no aplica', 'paltilla para radicacion {{ mensaje }}', '[\" mensaje \"]', 9, 'ACTIVO', '2026-02-25 14:38:58', '2026-02-25 14:38:58'),
+(10, 6, 'talento humano1', 'no aplica', 'plantilla de talento humano', '[]', 7, 'ACTIVO', '2026-02-25 19:40:46', '2026-02-25 19:40:46');
 
 -- --------------------------------------------------------
 
@@ -329,10 +343,10 @@ INSERT INTO `usuarios` (`documento`, `nombre`, `correo`, `password`, `fecha_regi
 (3, 'jefe', 'jefe@gmail.com', '$2a$10$H6aaSDbsz6/AtfLeI.19z.zlbON2yVhRd3dy4VyfS7j.wH9pank3e', '2025-12-16 17:55:59', 0, 'ACTIVO', NULL, NULL, 'ADMINISTRADOR'),
 (4, 'Daniela Manrique', 'Dani123', '$2a$10$y9PngRvGILyu.AgzgSOukOwBUxilSiPQuCpXTcBvK/Fy0KLX3YTSO', '2025-12-16 19:32:30', 0, 'ACTIVO', NULL, NULL, 'ADMINISTRADOR'),
 (5, 'Alexandra Barreto', 'sistemas@umit.com.co', '$2a$10$cq9YEmZbrVwvFX6yf1QMJeOsQ3/IrVcalJ6mhfgbpVk2kRevjyutq', '2025-12-16 19:50:56', 0, 'ACTIVO', NULL, NULL, 'ADMINISTRADOR'),
-(6, 'daniela ', 'dmm@gmail.com', '$2a$10$0W3u.YphdEYAwvd2jKLqEepDZDxTDDuhhw5fSYtMnB7PeaQbOn4Xi', '2025-12-17 20:58:46', 0, 'ACTIVO', NULL, NULL, 'ADMINISTRADOR'),
+(6, 'Daniela ', 'dmm@gmail.com', '$2a$10$0W3u.YphdEYAwvd2jKLqEepDZDxTDDuhhw5fSYtMnB7PeaQbOn4Xi', '2025-12-17 20:58:46', 0, 'ACTIVO', NULL, NULL, 'ADMINISTRADOR'),
 (11111111, 'prueba01', 'prueba1@gmail.com', '$2a$10$lDMnxm08UhPxIx2/le20R.hHisHrW.APPLbL2bIFUucwudg3GVlFq', '2026-01-07 20:32:34', 6, 'ACTIVO', NULL, NULL, 'ESTANDAR'),
 (22222222, 'prueba2', 'prueba2@gmail.com', '$2a$10$.O7GZa4RGs5tKwHfFV.1ku7T9W2ENMZ3X6bZxE1A7MlsUKdTIJDpq', '2026-01-07 20:46:32', 6, 'ACTIVO', NULL, NULL, 'ESTANDAR'),
-(33333333, 'prueba3', 'prueba3@gmail.com', '$2a$10$m1VXiIB/kOoZLcsKkR0WLu1B2h6fFf3tfIK2NLTxQUMt2AOJJnX3u', '2026-02-19 20:06:34', 6, 'ACTIVO', NULL, NULL, 'ESTANDAR');
+(33333333, 'prueba3', 'prueba3@gmail.com', '$2a$10$m1VXiIB/kOoZLcsKkR0WLu1B2h6fFf3tfIK2NLTxQUMt2AOJJnX3u', '2026-02-19 20:06:34', 6, 'INACTIVO', NULL, NULL, 'ESTANDAR');
 
 --
 -- Índices para tablas volcadas
@@ -436,31 +450,31 @@ ALTER TABLE `acciones_usuario_envio`
 -- AUTO_INCREMENT de la tabla `activity_logs`
 --
 ALTER TABLE `activity_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT de la tabla `areas`
 --
 ALTER TABLE `areas`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 --
 -- AUTO_INCREMENT de la tabla `area_usuario`
 --
 ALTER TABLE `area_usuario`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=65;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=68;
 
 --
 -- AUTO_INCREMENT de la tabla `destinatarios_envio`
 --
 ALTER TABLE `destinatarios_envio`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=40;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=41;
 
 --
 -- AUTO_INCREMENT de la tabla `envios`
 --
 ALTER TABLE `envios`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=40;
 
 --
 -- AUTO_INCREMENT de la tabla `errores_envio`
@@ -472,7 +486,7 @@ ALTER TABLE `errores_envio`
 -- AUTO_INCREMENT de la tabla `plantillas`
 --
 ALTER TABLE `plantillas`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT de la tabla `remitentes`

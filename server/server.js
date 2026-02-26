@@ -232,12 +232,7 @@ app.post('/api/admin/crear-usuario', async (req, res) => {
     }
 
     if (usuarioCreadorDocumento) {
-      await logActivity(
-        usuarioCreadorDocumento,
-        'CREAR_USUARIO',
-        `Usuario creado: ${nombre} (${documento})`,
-        'USUARIOS'
-      );
+      await logActivity(usuarioCreadorDocumento,'CREAR_USUARIO',`Usuario creado: ${nombre} (${documento})`,'USUARIOS');
     }
 
     res.json({
@@ -320,12 +315,7 @@ app.put("/api/perfil", async (req, res) => {
       user: usuarioActualizado[0]
     });
     if (documento) {
-      await logActivity(
-        documento,
-        'ACTUALIZAR_PERFIL',
-        `Perfil actualizado`,
-        'USUARIOS'
-      );
+      await logActivity(documento,'ACTUALIZAR_PERFIL',`Perfil actualizado`,'USUARIOS');
     }
 
   } catch (error) {
@@ -390,12 +380,7 @@ app.put('/api/admin/usuarios/:documento', async (req, res) => {
       message: 'Usuario actualizado correctamente'
     });
     if (documentoAdmin) {
-      await logActivity(
-        documentoAdmin,
-        'ACTUALIZAR_USUARIO',
-        `Usuario actualizado: ${documento}`,
-        'USUARIOS'
-      );
+      await logActivity(documentoAdmin,'ACTUALIZAR_USUARIO',`Usuario actualizado: ${documento}`,'USUARIOS');
     }
 
   } catch (error) {
@@ -536,10 +521,7 @@ app.post('/api/admin/areas', async (req, res) => {
 
     res.json({ success: true, message: "Área creada correctamente" });
     if (documento) {
-      await logActivity(
-        documento,
-        'CREAR_AREA',
-        `Área creada: ${nombre}`,
+      await logActivity(documento,'CREAR_AREA',`Área creada: ${nombre}`,
         'AREAS'
       );
     }
@@ -571,12 +553,7 @@ app.put('/api/admin/areas/:id', async (req, res) => {
 
     res.json({ success: true, message: "Área actualizada correctamente" });
     if (documento) {
-      await logActivity(
-        documento,
-        'ACTUALIZAR_AREA',
-        `Área actualizada: ${nombre}`,
-        'AREAS'
-      );
+      await logActivity(documento,'ACTUALIZAR_AREA',`Área actualizada: ${nombre}`,'AREAS');
     }
 
   } catch (error) {
@@ -598,12 +575,7 @@ app.delete('/api/admin/areas/:id', async (req, res) => {
 
     res.json({ success: true });
     if (documento) {
-    await logActivity(
-      documento,
-      'ELIMINAR_AREA',
-      `Área eliminada ID: ${id}`,
-      'AREAS'
-    );
+    await logActivity(documento,'ELIMINAR_AREA',`Área eliminada ID: ${id}`,'AREAS');
   }
 
   } catch (error) {
@@ -1080,12 +1052,7 @@ app.post('/api/templates', async (req, res) => {
     const [result] = await pool.execute(
       `INSERT INTO plantillas (user_id, nom_plantilla, descripcion, html_content, variables, area_id, estado)  VALUES (?, ?, ?, ?, ?, ?, 'ACTIVO')`, [userId, nombre, descripcion || '', htmlContent, variablesJson, area_id]);
     if (userId) {
-      await logActivity(
-        parseInt(userId),
-        'CREAR_PLANTILLA',
-        `Plantilla creada: ${nombre}`,
-        'PLANTILLAS'
-      );
+      await logActivity(parseInt(userId),'CREAR_PLANTILLA',`Plantilla creada: ${nombre}`,'PLANTILLAS');
     }
 
     res.status(201).json({
@@ -1148,12 +1115,7 @@ app.put('/api/templates/:id', async (req, res) => {
     await pool.execute(
       `UPDATE plantillas SET ${updateFields.join(', ')}  WHERE id = ? AND user_id = ?`, updateValues );
    if (userId) {
-      await logActivity(
-            parseInt(userId),
-            'ACTUALIZAR_PLANTILLA',
-            `Plantilla actualizada: ${id}`,
-            'PLANTILLAS'
-          );
+      await logActivity(parseInt(userId),'ACTUALIZAR_PLANTILLA',`Plantilla actualizada: ${id}`,'PLANTILLAS');
     }
 
     res.json({
@@ -1196,12 +1158,7 @@ app.delete('/api/templates/:id', async (req, res) => {
     );
 
     if (userId) {
-      await logActivity(
-        parseInt(userId),
-        'ELIMINAR_PLANTILLA',
-        `Plantilla eliminada: ${existing[0].nombre}`,
-        'PLANTILLAS'
-      );
+      await logActivity(parseInt(userId),'ELIMINAR_PLANTILLA',`Plantilla eliminada: ${existing[0].nombre}`,'PLANTILLAS');
     }
 
     res.json({ success: true, message: 'Plantilla eliminada exitosamente' });

@@ -63,13 +63,9 @@ export default function RegistrosActividad() {
     });
   };
 
-  const handleBuscar = () => {
-    obtenerRegistros();
-  };
-
   useEffect(() => {
     obtenerRegistros();
-  }, [pagina]);
+  }, [pagina, filtros]);
 
   return (
     <div className="registros-container">
@@ -90,25 +86,24 @@ export default function RegistrosActividad() {
 
         <select name="action" value={filtros.action} onChange={handleChange}>
           <option value="todas">Todas las acciones</option>
+          <option value="CREAR_USUARIO">Crear Usuario</option>
+          <option value="ACTUALIZAR_USUARIO">Actualizar Usuario</option>
+          <option value="ELIMINAR_USUARIO">Eliminar Usuario</option>
+          <option value="SOLICITAR_RECUPERACION_PASSWORD">Solicitar Recuperación de Contraseña</option>
+          <option value="RESET_PASSWORD">Cambios de contraseña</option>
+          <option value="CREAR_AREA">Crear Área</option>          
+          <option value="ACTUALIZAR_AREA">Actualizar Área</option>
+          <option value="ELIMINAR_AREA">Eliminar Área</option>
+          <option value="ENVIO_CORREOS">Envío de Correos</option>
+          <option value="ENVIO_ERROR">Error en Envío de Correos</option>
           <option value="CREAR_PLANTILLA">Crear Plantilla</option>
           <option value="ACTUALIZAR_PLANTILLA">Actualizar Plantilla</option>
           <option value="ELIMINAR_PLANTILLA">Eliminar Plantilla</option>
-          <option value="CREAR_USUARIO">Crear Usuario</option>
-          <option value="ACTUALIZAR_USUARIO">Actualizar Usuario</option>
-          <option value="CREAR_AREA">Crear Área</option>
-          <option value="ACTUALIZAR_AREA">Actualizar Área</option>
-          <option value="CREAR_ENVIO">Crear Envío</option>
-          <option value="ACTUALIZAR_ENVIO">Actualizar Envío</option>
-          <option value="ENVIAR_CORREO">Enviar Correo</option>
         </select>
 
         <input type="date" name="fechaInicio" value={filtros.fechaInicio} onChange={handleChange}/>
 
         <input type="date" name="fechaFin" value={filtros.fechaFin} onChange={handleChange}/>
-
-        <button onClick={handleBuscar}>
-          Buscar
-        </button>
 
       </div>
 
