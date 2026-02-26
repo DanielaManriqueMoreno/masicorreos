@@ -62,7 +62,9 @@ const logActivity = async (userId, action, description, module = null) => {
       console.warn("logActivity: faltan datos obligatorios");
       return;
     }
-    await pool.execute(`INSERT INTO activity_logs (user_id, action, description, module) VALUES (?, ?, ?, ?)`,[userId, action, description || '', module]);
+
+    await pool.execute(`INSERT INTO activity_logs (user_id, action, description, module) VALUES (?, ?, ?, ?)`, [userId, action, description || '', module] );
+
   } catch (error) {
     console.error("Error registrando actividad:", error);
   }
@@ -382,9 +384,7 @@ app.put('/api/admin/usuarios/:documento', async (req, res) => {
         );
       }
     }
-
     await conn.commit();
-
     res.json({
       success: true,
       message: 'Usuario actualizado correctamente'
@@ -674,7 +674,7 @@ app.post('/api/forgot-password', async (req, res) => {
     }
 
     // Registrar actividad
-    await logActivity(user.id, user.usuario, 'SOLICITAR_RECUPERACION_PASSWORD', 'Solicitud de recuperación de contraseña');
+    await logActivity(user.documento,'SOLICITAR_RECUPERACION_PASSWORD','Solicitud de recuperación de contraseña','AUTH');
 
     res.json({
       success: true,
@@ -743,8 +743,7 @@ app.post('/api/reset-password', async (req, res) => {
     );
 
     // Registrar actividad
-    await logActivity(user.id, user.usuario, 'RESET_PASSWORD', 'Contraseña restablecida exitosamente');
-
+    await logActivity(user.documento,'RESET_PASSWORD','Contraseña restablecida exitosamente','AUTH');
     console.log(`✅ Contraseña restablecida para usuario: ${user.usuario}`);
 
     res.json({
@@ -930,12 +929,7 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
     }
   }
 
-  await conn.execute(
-    `
-    INSERT INTO destinatarios_envio
-    (envio_id, correo, estado, datos_json)
-    VALUES (?, ?, 'pendiente', ?)
-    `,
+  await conn.execute(`INSERT INTO destinatarios_envio (envio_id, correo, estado, datos_json) VALUES (?, ?, 'pendiente', ?) `,
     [
       envioId,
       correo,
@@ -952,12 +946,9 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
 
     await conn.commit();
 
-    await logActivity(
-      usuarioId,
-      'ENVIO_CORREOS',
-      `Envío ID ${envioId} - Total: ${rows.length}, Enviados: ${enviados}, Fallidos: ${fallidos}`,
-      'ENVIOS'
-    );
+    if (usuarioId) {
+      await logActivity(usuarioId, 'ENVIO_CORREOS', `Envío ID ${envioId} - Total: ${rows.length}`, 'ENVIOS');
+    }
     res.json({
       ok: true,
       results: {
@@ -976,12 +967,9 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
       ok: false,
       message: 'Error procesando envío'
     });
-    await logActivity(
-      usuarioId,
-      'ENVIO_CORREOS',
-      `Envío ID ${envioId} - Total: ${rows.length}, Enviados: ${enviados}, Fallidos: ${fallidos}`,
-      'ENVIOS'
-    );
+    if (usuarioId) {
+      await logActivity(usuarioId, 'ENVIO_ERROR', 'Error procesando envío', 'ENVIOS' );
+    }
   } finally {
     conn.release();
   }
