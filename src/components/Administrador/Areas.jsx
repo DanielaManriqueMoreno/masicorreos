@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { notifySuccess, notifyError, notifyWarning } from "../../utils/notificaciones";
 import "./Areas.css";
 
-export default function Areas() {
+export default function Areas({ usuario }) {
 
   const [areas, setAreas] = useState([]);
   const [nuevaArea, setNuevaArea] = useState("");
@@ -40,6 +40,7 @@ export default function Areas() {
         body: JSON.stringify({
           nombre: nuevaArea,
           estado: "ACTIVO",
+          documento: usuario.documento
         }),
       });
 
@@ -75,6 +76,7 @@ export default function Areas() {
           body: JSON.stringify({
             nombre: nombreEditado,
             estado: estadoEditado,
+            documento: usuario.documento
           }),
         }
       );
@@ -99,9 +101,9 @@ export default function Areas() {
 
     try {
       const res = await fetch(
-        `http://localhost:3001/api/admin/areas/${id}`,
-        { method: "DELETE" }
-      );
+  `http://localhost:3001/api/admin/areas/${id}?documento=${usuario.documento}`,
+  { method: "DELETE" }
+);
 
       if (!res.ok) {
         return notifyError("No se pudo eliminar el área");

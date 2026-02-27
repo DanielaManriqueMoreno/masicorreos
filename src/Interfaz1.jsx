@@ -45,6 +45,7 @@ function Interfaz1({ onSelect, onLogout, usuario }) {
     if (areaActiva) {
       return (
         <VistaArea
+          usuario = {usuario}
           areaId={areaActiva.id}
           nombreArea={areaActiva.nombre}
         />

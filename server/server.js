@@ -439,12 +439,7 @@ app.get('/api/auth/me', async (req, res) => {
   try {
     const { documento } = req.query;
 
-    const [rows] = await pool.execute(
-      `SELECT documento, nombre, correo, rol, estado
-       FROM usuarios
-       WHERE documento = ?`,
-      [documento]
-    );
+    const [rows] = await pool.execute( `SELECT documento, nombre, correo, rol, estado FROM usuarios WHERE documento = ?`, [documento] );
 
     if (rows.length === 0) {
       return res.status(401).json({ success: false });
@@ -513,18 +508,18 @@ app.post('/api/admin/areas', async (req, res) => {
         message: "El nombre es obligatorio"
       });
     }
-
+    console.log("Documento recibido:", documento);
     await pool.execute(
       'INSERT INTO areas (nombre, estado) VALUES (?, "ACTIVO")',
       [nombre]
     );
-
-    res.json({ success: true, message: "Área creada correctamente" });
+    console.log("Documento recibido:", documento);
     if (documento) {
       await logActivity(documento,'CREAR_AREA',`Área creada: ${nombre}`,
         'AREAS'
       );
     }
+    res.json({ success: true, message: "Área creada correctamente" });
 
   } catch (error) {
     console.error("Error creando área:", error);
@@ -551,10 +546,10 @@ app.put('/api/admin/areas/:id', async (req, res) => {
       [nombre, estado, id]
     );
 
-    res.json({ success: true, message: "Área actualizada correctamente" });
     if (documento) {
       await logActivity(documento,'ACTUALIZAR_AREA',`Área actualizada: ${nombre}`,'AREAS');
     }
+    res.json({ success: true, message: "Área actualizada correctamente" });
 
   } catch (error) {
     console.error("Error actualizando área:", error);
@@ -564,26 +559,32 @@ app.put('/api/admin/areas/:id', async (req, res) => {
 
 //Eliminar Area
 app.delete('/api/admin/areas/:id', async (req, res) => {
-  const documento = req.body.documento;
   try {
     const { id } = req.params;
+    const { documento } = req.query;
 
-    await pool.execute(
-      'DELETE FROM areas WHERE id = ?',
-      [id]
-    );
+    const [areaRows] = await pool.execute('SELECT nombre FROM areas WHERE id = ?', [id]);
+    if (!areaRows.length) {
+      return res.status(404).json({
+        success: false,
+        message: "Área no encontrada"
+      });
+    }
+    const nombreArea = areaRows[0].nombre;
+
+    await pool.execute('DELETE FROM areas WHERE id = ?', [id]);
+
+    if (documento) {
+      await logActivity(documento, 'ELIMINAR_AREA', `Área eliminada: ${nombreArea}`, 'AREAS' );
+    }
 
     res.json({ success: true });
-    if (documento) {
-    await logActivity(documento,'ELIMINAR_AREA',`Área eliminada ID: ${id}`,'AREAS');
-  }
 
   } catch (error) {
     console.error("Error eliminando área:", error);
-    res.status(500).json({ success: false });
+    res.status(500).json({ success: false, message: error.message });
   }
 });
-
 
 // ==================== ENDPOINTS DE RECUPERACIÓN DE CONTRASEÑA ====================
 
@@ -799,10 +800,7 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
   // SI ES ADMIN → no validar área
   if (rol === 'ADMINISTRADOR') {
 
-    const [rows] = await conn.execute(
-      `SELECT id, nom_plantilla, html_content FROM plantillas WHERE id = ? AND estado = 'ACTIVO'`,
-      [plantilla_id]
-    );
+    const [rows] = await conn.execute(`SELECT p.id, p.nom_plantilla, p.html_content, a.nombre AS nombre_area FROM plantillas p LEFT JOIN areas a ON p.area_id = a.id WHERE p.id = ? AND p.estado = 'ACTIVO'`, [plantilla_id] );
 
     plantillaRows = rows;
 
@@ -919,7 +917,7 @@ app.post('/api/envios', upload.single('archivo'), async (req, res) => {
     await conn.commit();
 
     if (usuarioId) {
-      await logActivity(usuarioId, 'ENVIO_CORREOS', `Envío ID ${envioId} - Total: ${rows.length}`, 'ENVIOS');
+      await logActivity( usuarioId, 'ENVIO_CORREOS', `Envío realizado - Plantilla "${plantilla.nom_plantilla}" del área "${plantilla.nombre_area}" enviada a ${rows.length} destinatarios`, 'ENVIOS' );
     }
     res.json({
       ok: true,
@@ -967,12 +965,7 @@ const processScheduledEmails = async () => {
         }
       }
 
-      await pool.execute(
-        `UPDATE envios 
-         SET estado = 'enviado', fecha_envio = NOW()
-         WHERE id = ?`,
-        [envio.id]
-      );
+      await pool.execute( `UPDATE envios SET estado = 'enviado', fecha_envio = NOW() WHERE id = ?`, [envio.id]);
     }
 
   } catch (error) {
@@ -1115,7 +1108,7 @@ app.put('/api/templates/:id', async (req, res) => {
     await pool.execute(
       `UPDATE plantillas SET ${updateFields.join(', ')}  WHERE id = ? AND user_id = ?`, updateValues );
    if (userId) {
-      await logActivity(parseInt(userId),'ACTUALIZAR_PLANTILLA',`Plantilla actualizada: ${id}`,'PLANTILLAS');
+      await logActivity(parseInt(userId),'ACTUALIZAR_PLANTILLA',`Plantilla actualizada: ${nombre}`,'PLANTILLAS');
     }
 
     res.json({

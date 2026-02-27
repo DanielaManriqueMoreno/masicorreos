@@ -86,19 +86,14 @@ export default function RegistrosActividad() {
 
         <select name="action" value={filtros.action} onChange={handleChange}>
           <option value="todas">Todas las acciones</option>
-          <option value="CREAR_USUARIO">Crear Usuario</option>
-          <option value="ACTUALIZAR_USUARIO">Actualizar Usuario</option>
-          <option value="ELIMINAR_USUARIO">Eliminar Usuario</option>
-          <option value="SOLICITAR_RECUPERACION_PASSWORD">Solicitar Recuperación de Contraseña</option>
-          <option value="RESET_PASSWORD">Cambios de contraseña</option>
-          <option value="CREAR_AREA">Crear Área</option>          
-          <option value="ACTUALIZAR_AREA">Actualizar Área</option>
-          <option value="ELIMINAR_AREA">Eliminar Área</option>
-          <option value="ENVIO_CORREOS">Envío de Correos</option>
-          <option value="ENVIO_ERROR">Error en Envío de Correos</option>
-          <option value="CREAR_PLANTILLA">Crear Plantilla</option>
-          <option value="ACTUALIZAR_PLANTILLA">Actualizar Plantilla</option>
-          <option value="ELIMINAR_PLANTILLA">Eliminar Plantilla</option>
+          <option value="CREAR_AREA">Crear Área</option> {/* 524 */}
+          <option value="ACTUALIZAR_AREA">Actualizar Área</option> {/* 556 */}
+          <option value="ELIMINAR_AREA">Eliminar Área</option> {/* 578 */}
+          <option value="ENVIO_CORREOS">Envío de Correos</option> {/* 922 */}
+          <option value="ENVIO_ERROR">Error en Envío de Correos</option> {/* 943 */}
+          <option value="CREAR_PLANTILLA">Crear Plantilla</option> {/* 1055 */}
+          <option value="ACTUALIZAR_PLANTILLA">Actualizar Plantilla</option> {/* 1118 */}
+          <option value="ELIMINAR_PLANTILLA">Eliminar Plantilla</option> {/* 1161 */}
         </select>
 
         <input type="date" name="fechaInicio" value={filtros.fechaInicio} onChange={handleChange}/>
