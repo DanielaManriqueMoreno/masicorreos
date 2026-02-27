@@ -64,7 +64,7 @@ export default function Sidebar({
             setAreaActiva(null);
             setVistaActual("crear-usuario");
           }}>
-          Crear Usuario
+          Usuarios
         </button>
 
           <button className="menu-item" onClick={() => {

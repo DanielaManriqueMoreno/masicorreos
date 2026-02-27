@@ -1,20 +1,10 @@
 import { useEffect, useState } from "react";
-import { obtenerUsuarioAdmin, editarUsuarioAdmin } from "../../api";
+import { obtenerUsuarioAdmin, editarUsuarioAdmin, obtenerAreas } from "../../api";
 import { notifySuccess, notifyError, notifyWarning } from "../../utils/notificaciones";
-import "./EditarUsuarioModal.css";
-
-// Mapa de áreas
-const AREAS = [
-  { id: 5, nombre: "Citas" },
-  { id: 6, nombre: "Calidad" },
-  { id: 7, nombre: "Talento Humano" },
-  { id: 8, nombre: "Contabilidad" },
-  { id: 9, nombre: "Radicación" },
-  { id: 10, nombre: "Sistemas" },
-  { id: 11, nombre: "Registros" }
-];
+import "./UsuarioModal.css";
 
 export default function EditarUsuarioModal({ documento, onClose, onActualizado }) {
+
   const [form, setForm] = useState({
     nombre: "",
     correo: "",
@@ -24,30 +14,56 @@ export default function EditarUsuarioModal({ documento, onClose, onActualizado }
     areas: []
   });
 
+  const [areasDisponibles, setAreasDisponibles] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  //  Cargar usuario
+  // 🔥 Cargar áreas activas
+  useEffect(() => {
+    const cargarAreas = async () => {
+      try {
+        const data = await obtenerAreas();
+        setAreasDisponibles(data);
+      } catch {
+        notifyError("Error al cargar áreas");
+      }
+    };
+
+    cargarAreas();
+  }, []);
+
+  // 🔥 Cargar usuario
   useEffect(() => {
     const cargarUsuario = async () => {
       try {
         const res = await obtenerUsuarioAdmin(documento);
+
         if (res.success) {
+
+          const areasActivasIds = areasDisponibles.map(a => a.id);
+
+          const areasFiltradas = (res.user.areas || [])
+            .filter(id => areasActivasIds.includes(id));
+
           setForm({
             nombre: res.user.nombre,
             correo: res.user.correo,
             estado: res.user.estado,
             password: "",
             confirmPassword: "",
-            areas: res.user.areas || []
+            areas: areasFiltradas
           });
         }
-      } catch (err) {
-        setError("Error al cargar usuario");
+
+      } catch {
+        notifyError("Error al cargar usuario");
       }
     };
 
-    cargarUsuario();
-  }, [documento]);
+    if (areasDisponibles.length > 0) {
+      cargarUsuario();
+    }
+
+  }, [documento, areasDisponibles]);
 
   const handleChange = e => {
     const { name, value } = e.target;
@@ -64,95 +80,94 @@ export default function EditarUsuarioModal({ documento, onClose, onActualizado }
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  if (form.password && form.password !== form.confirmPassword) {
-    notifyWarning("Las contraseñas no coinciden ⚠️");
-    return;
-  }
-
-  setLoading(true);
-
-  try {
-    const payload = {
-      nombre: form.nombre,
-      correo: form.correo,
-      estado: form.estado,
-      areas: form.areas
-    };
-
-    if (form.password) {
-      payload.password = form.password;
+    if (form.password && form.password !== form.confirmPassword) {
+      notifyWarning("Las contraseñas no coinciden ⚠️");
+      return;
     }
 
-    const res = await editarUsuarioAdmin(documento, payload);
+    setLoading(true);
 
-    if (res.success) {
+    try {
+      const payload = {
+        nombre: form.nombre,
+        correo: form.correo,
+        estado: form.estado,
+        areas: form.areas
+      };
 
-      // Actualizar sesión si es el mismo usuario
-      const usuarioSesion = JSON.parse(
-        localStorage.getItem("usuarioLogueado")
-      );
-
-      if (usuarioSesion?.documento === documento) {
-        localStorage.setItem(
-          "usuarioLogueado",
-          JSON.stringify({
-            ...usuarioSesion,
-            ...payload
-          })
-        );
+      if (form.password) {
+        payload.password = form.password;
       }
 
-      notifySuccess("Usuario actualizado correctamente ✅");
+      const res = await editarUsuarioAdmin(documento, payload);
 
-      onActualizado();
-      onClose();
+      if (res.success) {
+        notifySuccess("Usuario actualizado correctamente ✅");
+        onActualizado();
+        onClose();
+      } else {
+        notifyError(res.message);
+      }
 
-    } else {
-      notifyError(res.message || "Error al editar usuario");
+    } catch {
+      notifyError("Error del servidor");
+    } finally {
+      setLoading(false);
     }
+  };
 
-  } catch (err) {
-    notifyError("Error del servidor");
-  } finally {
-    setLoading(false);
-  }
-};
   return (
     <div className="modal-overlay">
       <div className="modal">
         <h3>Editar usuario</h3>
 
         <form onSubmit={handleSubmit}>
-          <input name="nombre" value={form.nombre} onChange={handleChange} placeholder="Nombre" required/>
-          <input name="correo" value={form.correo} onChange={handleChange} placeholder="Correo" required />
 
-          <select name="estado" value={form.estado} onChange={handleChange}>
-            <option value="ACTIVO">Activo</option>
-            <option value="INACTIVO">Inactivo</option>
-          </select>
+  <div className="modal-row">
 
-          <input type="password" name="password" placeholder="Nueva contraseña (opcional)" value={form.password} onChange={handleChange}/>
-          <input type="password" name="confirmPassword" placeholder="Confirmar contraseña" value={form.confirmPassword} onChange={handleChange}/>
-            <div className="checkbox-group">
-                {AREAS.map(area => (
-                    <label key={area.id}>
-                    {area.nombre}
-                    <input type="checkbox" checked={form.areas.includes(area.id)} onChange={() => toggleArea(area.id)} />
-                    </label>
-                ))}
-            </div>
+    {/* COLUMNA IZQUIERDA */}
+    <div className="modal-column">
+      <input name="nombre" value={form.nombre} onChange={handleChange} placeholder="Nombre completo" required />
+      <input name="correo" value={form.correo} onChange={handleChange} placeholder="Correo electrónico" required />
+      <input type="password" name="password" value={form.password} onChange={handleChange} placeholder="Nueva contraseña (opcional)" />
+      <input type="password" name="confirmPassword" value={form.confirmPassword} onChange={handleChange} placeholder="Confirmar contraseña" />
+    </div>
 
-          <div className="modal-actions">
-            <button type="submit" disabled={loading}>
-              {loading ? "Guardando..." : "Guardar"}
-            </button>
-            <button type="button" onClick={onClose}>
-              Cancelar
-            </button>
-          </div>
-        </form>
+    {/* COLUMNA DERECHA */}
+    <div className="modal-column">
+      <select name="estado" value={form.estado} onChange={handleChange}>
+        <option value="ACTIVO">Activo</option>
+        <option value="INACTIVO">Inactivo</option>
+      </select>
+
+      <div className="areas-section">
+        <div className="areas-title">Áreas de acceso</div>
+
+        <div className="areas-grid">
+          {areasDisponibles.map(area => (
+            <label key={area.id} className="area-option">
+              <input
+                type="checkbox"
+                checked={form.areas.includes(area.id)}
+                onChange={() => toggleArea(area.id)}
+              />
+              {area.nombre}
+            </label>
+          ))}
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div className="modal-actions">
+    <button type="submit">Guardar</button>
+    <button type="button" onClick={onClose}>Cancelar</button>
+  </div>
+
+</form>
       </div>
     </div>
   );

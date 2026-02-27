@@ -64,6 +64,12 @@ export const editarUsuarioAdmin = async (documento, data) => {
   return res.data;
 };
 
+// Obtener áreas activas
+export const obtenerAreas = async () => {
+  const res = await api.get('/areas');
+  return res.data;
+};
+
 // Función para verificar si el servidor está disponible
 const checkServerHealth = async () => {
   try {
@@ -74,183 +80,6 @@ const checkServerHealth = async () => {
     return response.status === 200;
   } catch (error) {
     return false;
-  }
-};
-
-// Función auxiliar para reintentar peticiones
-const retryRequest = async (requestFn, maxRetries = 3, delay = 2000) => {
-  for (let i = 0; i < maxRetries; i++) {
-    try {
-      return await requestFn();
-    } catch (error) {
-      if (i === maxRetries - 1) throw error;
-      if (error.request && !error.response) {
-        // Solo reintentar si es error de conexión
-        await new Promise(resolve => setTimeout(resolve, delay));
-        continue;
-      }
-      throw error;
-    }
-  }
-};
-
-// Enviar correos de Citas
-export const sendCitasEmails = async (file, userId, username, doSend) => {
-  try {
-    // Verificar conexión al servidor primero
-    const serverAvailable = await checkServerHealth();
-    if (!serverAvailable) {
-      throw new Error('El servidor backend no está disponible. Por favor, inicia el servidor:\n\n1. Abre una terminal\n2. Navega a la carpeta server: cd server\n3. Ejecuta: npm start\n\nO ejecuta: server\\iniciar.bat');
-    }
-
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('userId', userId);
-    formData.append('username', username);
-    formData.append('doSend', doSend ? 'true' : 'false');
-
-    const response = await retryRequest(async () => {
-      return await api.post('/send-citas', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        },
-        timeout: 300000 // 5 minutos
-      });
-    });
-    
-    if (response.status >= 400) {
-      throw new Error(response.data?.message || 'Error enviando correos');
-    }
-    
-    return response.data;
-  } catch (error) {
-    if (error.response) {
-      throw new Error(error.response.data?.message || 'Error enviando correos');
-    } else if (error.request || error.message.includes('servidor backend no está disponible')) {
-      throw error; // Ya tiene un mensaje claro
-    } else {
-      throw new Error('Error enviando correos: ' + error.message);
-    }
-  }
-};
-
-// Enviar correos de Reprogramación
-export const sendReprogramacionEmails = async (file, userId, username, doSend) => {
-  try {
-    // Verificar conexión al servidor primero
-    const serverAvailable = await checkServerHealth();
-    if (!serverAvailable) {
-      throw new Error('El servidor backend no está disponible. Por favor, inicia el servidor:\n\n1. Abre una terminal\n2. Navega a la carpeta server: cd server\n3. Ejecuta: npm start\n\nO ejecuta: server\\iniciar.bat');
-    }
-
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('userId', userId);
-    formData.append('username', username);
-    formData.append('doSend', doSend ? 'true' : 'false');
-
-    const response = await retryRequest(async () => {
-      return await api.post('/send-reprogramacion', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        },
-        timeout: 300000 // 5 minutos
-      });
-    });
-    
-    if (response.status >= 400) {
-      throw new Error(response.data?.message || 'Error enviando correos');
-    }
-    
-    return response.data;
-  } catch (error) {
-    if (error.response) {
-      throw new Error(error.response.data?.message || 'Error enviando correos');
-    } else if (error.request || error.message.includes('servidor backend no está disponible')) {
-      throw error; // Ya tiene un mensaje claro
-    } else {
-      throw new Error('Error enviando correos: ' + error.message);
-    }
-  }
-};
-
-// Enviar correos de Dengue
-export const sendDengueEmails = async (file, userId, username, doSend) => {
-  try {
-    // Verificar conexión al servidor primero
-    const serverAvailable = await checkServerHealth();
-    if (!serverAvailable) {
-      throw new Error('El servidor backend no está disponible. Por favor, inicia el servidor:\n\n1. Abre una terminal\n2. Navega a la carpeta server: cd server\n3. Ejecuta: npm start\n\nO ejecuta: server\\iniciar.bat');
-    }
-
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('userId', userId);
-    formData.append('username', username);
-    formData.append('doSend', doSend ? 'true' : 'false');
-
-    const response = await retryRequest(async () => {
-      return await api.post('/send-dengue', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        },
-        timeout: 300000 // 5 minutos
-      });
-    });
-    
-    if (response.status >= 400) {
-      throw new Error(response.data?.message || 'Error enviando correos');
-    }
-    
-    return response.data;
-  } catch (error) {
-    if (error.response) {
-      throw new Error(error.response.data?.message || 'Error enviando correos');
-    } else if (error.request || error.message.includes('servidor backend no está disponible')) {
-      throw error; // Ya tiene un mensaje claro
-    } else {
-      throw new Error('Error enviando correos: ' + error.message);
-    }
-  }
-};
-
-// Enviar correos de Cursos
-export const sendCursosEmails = async (file, userId, username, doSend) => {
-  try {
-    // Verificar conexión al servidor primero
-    const serverAvailable = await checkServerHealth();
-    if (!serverAvailable) {
-      throw new Error('El servidor backend no está disponible. Por favor, inicia el servidor:\n\n1. Abre una terminal\n2. Navega a la carpeta server: cd server\n3. Ejecuta: npm start\n\nO ejecuta: server\\iniciar.bat');
-    }
-
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('userId', userId);
-    formData.append('username', username);
-    formData.append('doSend', doSend ? 'true' : 'false');
-
-    const response = await retryRequest(async () => {
-      return await api.post('/send-cursos', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        },
-        timeout: 300000 // 5 minutos
-      });
-    });
-    
-    if (response.status >= 400) {
-      throw new Error(response.data?.message || 'Error enviando correos');
-    }
-    
-    return response.data;
-  } catch (error) {
-    if (error.response) {
-      throw new Error(error.response.data?.message || 'Error enviando correos');
-    } else if (error.request || error.message.includes('servidor backend no está disponible')) {
-      throw error; // Ya tiene un mensaje claro
-    } else {
-      throw new Error('Error enviando correos: ' + error.message);
-    }
   }
 };
 

@@ -1,9 +1,10 @@
-import { useState } from "react";
-import { crearUsuarioAdmin } from "../../api";
+import { useState, useEffect } from "react";
+import { crearUsuarioAdmin, obtenerAreas } from "../../api";
 import { notifySuccess, notifyError, notifyWarning } from "../../utils/notificaciones";
-import "./CrearUsuarioModal.css";
+import "./UsuarioModal.css";
 
 export default function CrearUsuarioModal({ onClose, onCreado }) {
+
   const usuarioActual = JSON.parse(localStorage.getItem("usuarioLogueado"));
 
   const [form, setForm] = useState({
@@ -16,177 +17,147 @@ export default function CrearUsuarioModal({ onClose, onCreado }) {
     estado: "",
     areas: []
   });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
 
-   const handleChange = e => {
+  const [areasDisponibles, setAreasDisponibles] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // 🔥 Cargar áreas activas
+  useEffect(() => {
+    const cargarAreas = async () => {
+      try {
+        const data = await obtenerAreas();
+        setAreasDisponibles(data);
+      } catch (error) {
+        notifyError("Error al cargar áreas");
+      }
+    };
+
+    cargarAreas();
+  }, []);
+
+  const handleChange = e => {
     const { name, value } = e.target;
     setForm(prev => ({ ...prev, [name]: value }));
   };
 
-  const toggleArea = area => {
+  const toggleArea = areaId => {
     setForm(prev => ({
       ...prev,
-      areas: prev.areas.includes(area)
-        ? prev.areas.filter(a => a !== area)
-        : [...prev.areas, area]
+      areas: prev.areas.includes(areaId)
+        ? prev.areas.filter(a => a !== areaId)
+        : [...prev.areas, areaId]
     }));
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setLoading(true);
+    e.preventDefault();
+    setLoading(true);
 
-  if (form.password !== form.confirmPassword) {
-    notifyWarning("Las contraseñas no coinciden ⚠️");
-    setLoading(false);
-    return;
-  }
-
-  if (!usuarioActual?.documento) {
-    notifyError("No se pudo identificar el usuario creador");
-    setLoading(false);
-    return;
-  }
-
-  if (!form.rol || !form.estado) {
-    notifyWarning("Debe seleccionar rol y estado");
-    setLoading(false);
-    return;
-  }
-
-  try {
-    const { confirmPassword, ...data } = form;
-
-    const res = await crearUsuarioAdmin({
-      ...data,
-      usuarioCreadorDocumento: usuarioActual.documento
-    });
-
-    if (res.success) {
-
-      notifySuccess("Usuario creado correctamente ✅");
-
-      // Reset del formulario
-      setForm({
-        documento: "",
-        nombre: "",
-        correo: "",
-        password: "",
-        confirmPassword: "",
-        rol: "",
-        estado: "",
-        areas: []
-      });
-
-      onCreado();
-      onClose();
-
-    } else {
-      notifyError(res.message || "Error al crear usuario");
+    if (form.password !== form.confirmPassword) {
+      notifyWarning("Las contraseñas no coinciden ⚠️");
+      setLoading(false);
+      return;
     }
 
-  } catch (err) {
-    notifyError("Error de conexión con el servidor");
-    console.error(err);
-  } finally {
-    setLoading(false);
-  }
-};
+    if (!usuarioActual?.documento) {
+      notifyError("No se pudo identificar el usuario creador");
+      setLoading(false);
+      return;
+    }
 
+    try {
+      const { confirmPassword, ...data } = form;
+
+      const res = await crearUsuarioAdmin({
+        ...data,
+        usuarioCreadorDocumento: usuarioActual.documento
+      });
+
+      if (res.success) {
+        notifySuccess("Usuario creado correctamente ✅");
+
+        setForm({
+          documento: "",
+          nombre: "",
+          correo: "",
+          password: "",
+          confirmPassword: "",
+          rol: "",
+          estado: "",
+          areas: []
+        });
+
+        onCreado();
+        onClose();
+      } else {
+        notifyError(res.message || "Error al crear usuario");
+      }
+
+    } catch (err) {
+      notifyError("Error de conexión con el servidor");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="modal-overlay">
       <div className="modal">
         <h3>Crear usuario</h3>
+
         <form onSubmit={handleSubmit}>
-          <div className="row">
-            <div className="column">
-              <label className="label">Documento: </label>
-              <input name="documento" placeholder="Número de documento" value={form.documento} onChange={handleChange} required/>
 
-              <label className="label">Nombre completo: </label>
-              <input name="nombre" placeholder="Nombre completo" value={form.nombre} onChange={handleChange} required/>
+  <div className="modal-row">
 
-              <label className="label">Correo electrónico: </label>
-              <input name="correo" type="email" placeholder="Correo electrónico" value={form.correo} onChange={handleChange} required />
+    {/* COLUMNA IZQUIERDA */}
+    <div className="modal-column">
+      <input name="documento" value={form.documento} onChange={handleChange} placeholder="Documento" required />
+      <input name="nombre" value={form.nombre} onChange={handleChange} placeholder="Nombre completo" required />
+      <input name="correo" value={form.correo} onChange={handleChange} placeholder="Correo electrónico" required />
+      <input type="password" name="password" value={form.password} onChange={handleChange} placeholder="Contraseña" required />
+      <input type="password" name="confirmPassword" value={form.confirmPassword} onChange={handleChange} placeholder="Confirmar contraseña" required />
+    </div>
 
-              <label className="label">Contraseña: </label>
-              <input name="password" type="password" placeholder="Contraseña" value={form.password} onChange={handleChange} required />
+    {/* COLUMNA DERECHA */}
+    <div className="modal-column">
+      <select name="rol" value={form.rol} onChange={handleChange} required>
+        <option value="">Seleccione rol</option>
+        <option value="ESTANDAR">Estandar</option>
+        <option value="ADMINISTRADOR">Administrador</option>
+      </select>
 
-              <label className="label">Confirmar Contraseña</label>
-              <input name="confirmPassword" type="password" placeholder="Confirmar contraseña" value={form.confirmPassword} onChange={handleChange} required/>
-            </div>
+      <select name="estado" value={form.estado} onChange={handleChange} required>
+        <option value="">Seleccione estado</option>
+        <option value="ACTIVO">Activo</option>
+        <option value="INACTIVO">Inactivo</option>
+      </select>
 
-            <div className="column">
-              <div className="form-group">
-                <label>Rol:</label>
-                <select name="rol" value={form.rol} onChange={handleChange}>
-                  <option value="">Seleccione rol</option>
-                  <option value="ESTANDAR">Estandar</option>
-                  <option value="ADMINISTRADOR">Administrador</option>
-                </select>
-              </div>
+      <div className="areas-section">
+        <div className="areas-title">Áreas de acceso</div>
 
-              <div className="form-group">
-                <label>Estado:</label>
-                <select name="estado" value={form.estado} onChange={handleChange}>
-                  <option value="">Seleccione estado</option>
-                  <option value="ACTIVO">Activo</option>
-                  <option value="INACTIVO">Inactivo</option>
-                </select>
-              </div>
+        <div className="areas-grid">
+          {areasDisponibles.map(area => (
+            <label key={area.id} className="area-option">
+              <input
+                type="checkbox"
+                checked={form.areas.includes(area.id)}
+                onChange={() => toggleArea(area.id)}
+              />
+              {area.nombre}
+            </label>
+          ))}
+        </div>
+      </div>
+    </div>
 
-              <div className="form-group">
-                <label>Áreas de acceso:</label>
-                <div className="checkbox-group">
-                  <label>
-                    <input type="checkbox"checked={form.areas.includes("5")} onChange={() => toggleArea("5")}/>
-                    Citas
-                  </label>
+  </div>
 
-                  <label>
-                    <input type="checkbox" checked={form.areas.includes("6")} onChange={() => toggleArea("6")} />
-                    Calidad
-                  </label>
+  <div className="modal-actions">
+    <button type="submit">Crear</button>
+    <button type="button" onClick={onClose}>Cancelar</button>
+  </div>
 
-                  <label>
-                    <input type="checkbox" checked={form.areas.includes("7")} onChange={() => toggleArea("7")}/>
-                    Talento Humano
-                  </label>
-
-                  <label>
-                    <input type="checkbox" checked={form.areas.includes("8")} onChange={() => toggleArea("8")}/>
-                    Contabilidad
-                  </label>
-
-                  <label>
-                    <input type="checkbox" checked={form.areas.includes("9")} onChange={() => toggleArea("9")}/>
-                    Radicación
-                  </label>
-
-                  <label>
-                    <input type="checkbox" checked={form.areas.includes("10")} onChange={() => toggleArea("10")}/>
-                    Sistemas
-                  </label>
-
-                  <label>
-                    <input type="checkbox" checked={form.areas.includes("11")} onChange={() => toggleArea("11")}/>
-                    Registros
-                  </label>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="modal-actions">
-            <button type="submit" disabled={loading}>
-              {loading ? "Creando..." : "Crear"}
-            </button>
-            <button type="button" onClick={onClose} disabled={loading}>
-              Cancelar
-            </button>
-          </div>
-        </form>
+</form>
       </div>
     </div>
   );
