@@ -106,7 +106,7 @@ const RecuperarPassword = ({ onCerrar }) => {
   return (
     <div className="recuperar-password-panel">
       <div className="recuperar-password-header">
-        <h2>🔐 Recuperar Contraseña</h2>
+        <h2>Recuperar Contraseña</h2>
         <button className="btn-cerrar" onClick={onCerrar}>✕</button>
       </div>
 
@@ -115,21 +115,13 @@ const RecuperarPassword = ({ onCerrar }) => {
           <div className="paso-solicitar">
             <h3>Paso 1: Solicitar Recuperación</h3>
             <p className="instrucciones">
-              Ingresa tu nombre de usuario. Te enviaremos un correo con un código de verificación de 6 dígitos para restablecer tu contraseña.
+              Ingresa tu correo. Te enviaremos un correo con un código de verificación de 6 dígitos para restablecer tu contraseña.
             </p>
 
             <form onSubmit={handleSolicitarRecuperacion}>
               <div className="form-group">
-                <label htmlFor="usuario">Nombre de Usuario:</label>
-                <input
-                  id="usuario"
-                  type="text"
-                  value={usuario}
-                  onChange={(e) => setUsuario(e.target.value)}
-                  placeholder="Ingresa tu usuario"
-                  disabled={cargando}
-                  required
-                />
+                <label htmlFor="usuario">correo:</label>
+                <input id="usuario" type="text" value={usuario} onChange={(e) => setUsuario(e.target.value)} placeholder="Ingresa tu correo" disabled={cargando} required />
               </div>
 
               {error && (
@@ -149,10 +141,7 @@ const RecuperarPassword = ({ onCerrar }) => {
               <span>O</span>
             </div>
 
-            <button 
-              className="btn-cambiar-paso"
-              onClick={() => setPaso('restablecer')}
-            >
+            <button className="btn-cambiar-paso" onClick={() => setPaso('restablecer')}>
               Ya tengo el código, restablecer contraseña →
             </button>
           </div>
@@ -166,11 +155,7 @@ const RecuperarPassword = ({ onCerrar }) => {
             <form onSubmit={handleRestablecerPassword}>
               <div className="form-group">
                 <label htmlFor="codigo">Código de Verificación (6 dígitos):</label>
-                <input
-                  id="codigo"
-                  type="text"
-                  value={codigo}
-                  onChange={(e) => {
+                <input id="codigo" type="text" value={codigo} onChange={(e) => {
                     // Solo permitir números y máximo 6 dígitos
                     const value = e.target.value.replace(/\D/g, '').slice(0, 6);
                     setCodigo(value);
@@ -192,30 +177,12 @@ const RecuperarPassword = ({ onCerrar }) => {
 
               <div className="form-group">
                 <label htmlFor="nuevaPassword">Nueva Contraseña:</label>
-                <input
-                  id="nuevaPassword"
-                  type="password"
-                  value={nuevaPassword}
-                  onChange={(e) => setNuevaPassword(e.target.value)}
-                  placeholder="Mínimo 8 caracteres"
-                  disabled={cargando}
-                  required
-                  minLength={8}
-                />
+                <input id="nuevaPassword" type="password" value={nuevaPassword} onChange={(e) => setNuevaPassword(e.target.value)} placeholder="Mínimo 8 caracteres" disabled={cargando}required minLength={8}/>
               </div>
 
               <div className="form-group">
                 <label htmlFor="confirmarPassword">Confirmar Contraseña:</label>
-                <input
-                  id="confirmarPassword"
-                  type="password"
-                  value={confirmarPassword}
-                  onChange={(e) => setConfirmarPassword(e.target.value)}
-                  placeholder="Repite la contraseña"
-                  disabled={cargando}
-                  required
-                  minLength={8}
-                />
+                <input id="confirmarPassword" type="password" value={confirmarPassword} onChange={(e) => setConfirmarPassword(e.target.value)} placeholder="Repite la contraseña" disabled={cargando}required minLength={8} />
               </div>
 
               {error && (
@@ -235,14 +202,7 @@ const RecuperarPassword = ({ onCerrar }) => {
               <span>O</span>
             </div>
 
-            <button 
-              className="btn-cambiar-paso"
-              onClick={() => {
-                setPaso('solicitar');
-                setError('');
-                setMensaje('');
-              }}
-            >
+            <button className="btn-cambiar-paso" onClick={() => { setPaso('solicitar'); setError(''); setMensaje('');}}>
               ← Solicitar nuevo correo
             </button>
           </div>

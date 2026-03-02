@@ -40,13 +40,7 @@ PORT=3001
 
 4. **Crear la base de datos MySQL:**
    - Abre MySQL (phpMyAdmin, MySQL Workbench, o línea de comandos)
-   - Ejecuta el script `server/database.sql` o ejecuta:
-```sql
-CREATE DATABASE masicorreos_db;
-USE masicorreos_db;
--- Luego ejecuta el contenido del archivo database.sql
-```
-
+   - Ejecuta el script `masicorreos_db.sql` 
 5. **Iniciar el servidor backend:**
 ```bash
 npm start

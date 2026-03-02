@@ -9,6 +9,7 @@ import path from 'path';
 import upload from '../src/components/Envios/utils/multer.js';
 import { fileURLToPath } from 'url';
 import pool, { testConnection } from './database.js';
+import { sendPasswordResetEmail } from './emailService.js';
 import bcrypt from 'bcryptjs';
 import multer from 'multer';
 import crypto from 'crypto';
@@ -591,25 +592,24 @@ app.delete('/api/admin/areas/:id', async (req, res) => {
 // Solicitar recuperación de contraseña
 app.post('/api/forgot-password', async (req, res) => {
   try {
-    const { usuario } = req.body;
-
+    const { correo } = req.body;
     // Validaciones
-    if (!usuario) {
+    if (!correo) {
       return res.status(400).json({ 
         success: false, 
-        message: 'El usuario es obligatorio' 
+        message: 'El correo es obligatorio' 
       });
     }
 
-    // Buscar usuario por nombre de usuario
+    // Buscar usuario por correo
     const [users] = await pool.execute(
-      'SELECT documento, nombre, usuario FROM usuarios WHERE usuario = ? AND is_active = TRUE',
-      [usuario.trim()]
+      'SELECT documento, nombre, correo FROM usuarios WHERE correo = ? AND estado = "ACTIVO"',
+      [correo.trim()]
     );
 
     // Por seguridad, siempre devolver éxito (no revelar si el usuario existe o no)
     if (users.length === 0) {
-      console.log('Intento de recuperación para usuario inexistente:', usuario);
+      console.log('Intento de recuperación para usuario inexistente:', correo);
       return res.json({
         success: true,
         message: 'Si el usuario existe, recibirás un correo con las instrucciones para recuperar tu contraseña.'
@@ -631,14 +631,14 @@ app.post('/api/forgot-password', async (req, res) => {
 
     // Enviar correo de recuperación con el código
     try {
-      await sendPasswordResetEmail(user.usuario, codigoVerificacion, user.nombre || user.usuario);
-      console.log(`Correo de recuperación enviado a: ${user.usuario}`);
+      await sendPasswordResetEmail(user.correo, codigoVerificacion, user.nombre || user.correo);
+      console.log(`Correo de recuperación enviado a: ${user.correo}`);
     } catch (emailError) {
       console.error('Error enviando correo de recuperación:', emailError);
       // Limpiar token si falla el envío
       await pool.execute(
-        'UPDATE usuarios SET reset_token = NULL, reset_token_expires = NULL WHERE id = ?',
-        [user.id]
+        'UPDATE usuarios SET reset_token = NULL, reset_token_expires = NULL WHERE documento = ?',
+        [user.documento]
       );
       return res.status(500).json({
         success: false,
@@ -693,7 +693,7 @@ app.post('/api/reset-password', async (req, res) => {
 
     // Buscar usuario con código válido
     const [users] = await pool.execute(
-      'SELECT documento, usuario FROM usuarios WHERE reset_token = ? AND reset_token_expires > NOW()',
+      'SELECT documento, correo FROM usuarios WHERE reset_token = ? AND reset_token_expires > NOW()',
       [token]
     );
 
@@ -711,8 +711,8 @@ app.post('/api/reset-password', async (req, res) => {
 
     // Actualizar contraseña y limpiar token
     await pool.execute(
-      'UPDATE usuarios SET password = ?, reset_token = NULL, reset_token_expires = NULL WHERE id = ?',
-      [hashedPassword, user.id]
+      'UPDATE usuarios SET password = ?, reset_token = NULL, reset_token_expires = NULL WHERE documento = ?',
+      [hashedPassword, user.documento]
     );
 
     // Registrar actividad
