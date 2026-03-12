@@ -17,7 +17,7 @@ const generarPlantilla = (mensaje) => {
       <!-- HEADER -->
       <div style="padding:25px 30px;text-align:center;">
       <img 
-          src="http://127.0.0.1:3001/public/umit-logo.png"
+          src="cid:logoUMIT"
           alt="UMIT"
           style="width:110px;margin-bottom:10px;"
       />
@@ -58,7 +58,7 @@ const generarPlantilla = (mensaje) => {
         </div>
 
         <div style="margin-top:12px;opacity:0.8;font-size:11px;">
-          Este es un mensaje oficial de la Unidad Materno Infantil del Tolima.9
+          Este es un mensaje oficial de la Unidad Materno Infantil del Tolima.
         </div>
 
       </div>

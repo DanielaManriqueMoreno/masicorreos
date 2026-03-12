@@ -1,8 +1,11 @@
 import nodemailer from 'nodemailer';
 import pool from './database.js';
+import path from 'node:path';
+import generarPlantilla  from './emailTemplates.js';
 
 export const enviarCorreo = async ({ remitente_id, to, subject, html }) => {
 
+  const htmlConPlantilla = generarPlantilla(html);
   const [rows] = await pool.execute(
     "SELECT * FROM remitentes WHERE id = ? AND estado = 'activo'",
     [remitente_id]
@@ -24,10 +27,26 @@ export const enviarCorreo = async ({ remitente_id, to, subject, html }) => {
     }
   });
 
-  await transporter.sendMail({
-    from: `"${remitente.nombre}" <${remitente.correo}>`,
-    to,
-    subject,
-    html
-  });
-};
+  console.log(path.join(process.cwd(), "..", "public", "umit-logo.png"));
+  console.log(htmlConPlantilla);
+  try {
+
+      await transporter.sendMail({
+        from: `"${remitente.nombre}" <${remitente.correo}>`,
+        to,
+        subject,
+        html: htmlConPlantilla,
+        attachments: [
+          {
+            filename: 'umit-logo.png',
+            path: path.join(process.cwd(), "public", "umit-logo.png"),
+            cid: "logoUMIT"
+          }
+        ]
+      });
+
+      console.log("✅ Correo enviado correctamente");
+  } catch (error) {
+    console.error("❌ Error enviando correo:", error);
+  }
+  };

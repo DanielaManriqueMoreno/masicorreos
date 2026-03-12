@@ -14,7 +14,6 @@ import bcrypt from 'bcryptjs';
 import multer from 'multer';
 import crypto from 'crypto';
 import cron from 'node-cron';
-import generarPlantilla from './emailTemplates.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -25,44 +24,6 @@ const __dirname = path.dirname(__filename);
 app.use("/public", express.static(path.join(__dirname, "../public")));
 // Cargar .env PRIMERO antes de importar otros módulos
 dotenv.config({ path: path.join(__dirname, '.env') });
-
-
-const enviarCorreo = async ({ remitente_id, to, subject, html }) => {
-
-  const [rows] = await pool.execute(
-    "SELECT * FROM remitentes WHERE id = ? AND estado = 'ACTIVO'",
-    [remitente_id]
-  );
-
-  if (!rows.length) {
-    throw new Error("Remitente no encontrado o inactivo");
-  }
-
-  const remitente = rows[0];
-
-  const transporter = nodemailer.createTransport({
-    host: remitente.smtp_host,
-    port: remitente.smtp_port,
-    secure: !!remitente.secure,
-    auth: {
-      user: remitente.correo,
-      pass: remitente.password_app
-    }
-  });
-  console.log("Configuración SMTP:", {
-    host: remitente.smtp_host,
-    port: remitente.smtp_port,
-    secure: remitente.secure,
-    user: remitente.correo
-  });
-  await transporter.sendMail({
-    from: `"${remitente.nombre}" <${remitente.correo}>`,
-    to,
-    subject,
-    html
-  });
-};
-
 
 const logActivity = async (userId, action, description, module = null) => {
   try {
