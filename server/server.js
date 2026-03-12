@@ -16,6 +16,17 @@ import crypto from 'crypto';
 import cron from 'node-cron';
 import generarPlantilla from './emailTemplates.js';
 
+const app = express();
+const PORT = process.env.PORT || 3001;
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+app.use("/public", express.static(path.join(__dirname, "../public")));
+// Cargar .env PRIMERO antes de importar otros módulos
+dotenv.config({ path: path.join(__dirname, '.env') });
+
+
 const enviarCorreo = async ({ remitente_id, to, subject, html }) => {
 
   const [rows] = await pool.execute(
@@ -52,10 +63,6 @@ const enviarCorreo = async ({ remitente_id, to, subject, html }) => {
   });
 };
 
-// Cargar .env PRIMERO antes de importar otros módulos
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-dotenv.config({ path: path.join(__dirname, '.env') });
 
 const logActivity = async (userId, action, description, module = null) => {
   try {
@@ -70,9 +77,6 @@ const logActivity = async (userId, action, description, module = null) => {
     console.error("Error registrando actividad:", error);
   }
 };
-
-const app = express();
-const PORT = process.env.PORT || 3001;
 
 // Middlewares
 app.use((req, res, next) => {

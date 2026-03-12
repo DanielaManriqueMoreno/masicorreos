@@ -16,12 +16,17 @@ const generarPlantilla = (mensaje) => {
 
       <!-- HEADER -->
       <div style="padding:25px 30px;text-align:center;">
+      <img 
+          src="http://127.0.0.1:3001/public/umit-logo.png"
+          alt="UMIT"
+          style="width:110px;margin-bottom:10px;"
+      />
         <div style="font-size:20px;font-weight:700;color:#0f4c75;letter-spacing:1px;">
           UNIDAD MATERNO INFANTIL DEL TOLIMA
         </div>
-
+      
         <div style="margin-top:8px;font-size:13px;color:#3282b8;">
-          Comprometidos con la salud y el bienestar
+          Comprometidos con la madre y la familia.
         </div>
       </div>
 
@@ -48,13 +53,12 @@ const generarPlantilla = (mensaje) => {
           ☎ 312 432 7635 &nbsp; | &nbsp; 608 277 1686
         </div>
 
-        <div>
+        <div style="color: #ffffff;margin-top:8px;">
           🌐 www.umit.com.co
         </div>
 
         <div style="margin-top:12px;opacity:0.8;font-size:11px;">
-          Este es un mensaje oficial de la Unidad Materno Infantil del Tolima.
-          No solicitamos pagos por medios virtuales no autorizados.
+          Este es un mensaje oficial de la Unidad Materno Infantil del Tolima.9
         </div>
 
       </div>
