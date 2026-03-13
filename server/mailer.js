@@ -5,7 +5,7 @@ import generarPlantilla  from './emailTemplates.js';
 
 export const enviarCorreo = async ({ remitente_id, to, subject, html }) => {
 
-  const htmlConPlantilla = generarPlantilla(html);
+  const htmlConPlantilla = html;
   const [rows] = await pool.execute(
     "SELECT * FROM remitentes WHERE id = ? AND estado = 'activo'",
     [remitente_id]
@@ -29,7 +29,7 @@ export const enviarCorreo = async ({ remitente_id, to, subject, html }) => {
 
   console.log(path.join(process.cwd(), "..", "public", "umit-logo.png"));
   console.log(htmlConPlantilla);
-  try {
+  try {;
 
       await transporter.sendMail({
         from: `"${remitente.nombre}" <${remitente.correo}>`,
